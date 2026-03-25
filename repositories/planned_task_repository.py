@@ -7,79 +7,45 @@ from models.enums import TaskType, TaskStatus
 
 
 class PlannedTaskRepository:
-    def __init__(self, db: Database):
+    def __init__(self, db: Database) -> None:
         self._db = db
+
+    _COLUMNS = """
+        id, project_id, project_code, project_name,
+        document_id, document_code, revision_id, revision_index,
+        name, task_type, assigned_to, owner_name,
+        duration_days_planned, work_hours_planned,
+        start_date_planned, end_date_planned,
+        start_date_actual, end_date_actual,
+        percent_complete, status,
+        es, ef, ls, lf, slack, actual_hours
+    """
 
     def get_by_id(self, task_id: int) -> Optional[PlannedTask]:
         row = self._db.fetch_one(
-            """
-            SELECT id,
-                   project_id,
-                   project_code,
-                   project_name,
-                   document_id,
-                   document_code,
-                   revision_id,
-                   revision_index,
-                   name,
-                   task_type,
-                   assigned_to,
-                   owner_name,
-                   duration_days_planned,
-                   work_hours_planned,
-                   start_date_planned,
-                   end_date_planned,
-                   start_date_actual,
-                   end_date_actual,
-                   percent_complete,
-                   status,
-                   es,
-                   ef,
-                   ls,
-                   lf,
-                   slack,
-                   actual_hours
-            FROM planned_tasks
-            WHERE id = %s
-            """,
+            f"SELECT {self._COLUMNS} FROM planned_tasks WHERE id = %s",
             (task_id,),
         )
         return self._row_to_model(row) if row else None
 
     def get_by_project_id(self, project_id: int) -> Sequence[PlannedTask]:
         rows = self._db.fetch_all(
-            """
-            SELECT id,
-                   project_id,
-                   project_code,
-                   project_name,
-                   document_id,
-                   document_code,
-                   revision_id,
-                   revision_index,
-                   name,
-                   task_type,
-                   assigned_to,
-                   owner_name,
-                   duration_days_planned,
-                   work_hours_planned,
-                   start_date_planned,
-                   end_date_planned,
-                   start_date_actual,
-                   end_date_actual,
-                   percent_complete,
-                   status,
-                   es,
-                   ef,
-                   ls,
-                   lf,
-                   slack,
-                   actual_hours
-            FROM planned_tasks
+            f"""
+            SELECT {self._COLUMNS} FROM planned_tasks
             WHERE project_id = %s
             ORDER BY start_date_planned NULLS FIRST, id
             """,
             (project_id,),
+        )
+        return [self._row_to_model(r) for r in rows]
+
+    def get_by_revision_id(self, revision_id: int) -> Sequence[PlannedTask]:
+        rows = self._db.fetch_all(
+            f"""
+            SELECT {self._COLUMNS} FROM planned_tasks
+            WHERE revision_id = %s ORDER BY id
+            """,
+            (revision_id,),
         )
         return [self._row_to_model(r) for r in rows]
 
@@ -100,100 +66,33 @@ class PlannedTaskRepository:
         work_hours_planned: float,
         start_date_planned: date | None,
         end_date_planned: date | None,
-        start_date_actual: date | None,
-        end_date_actual: date | None,
-        percent_complete: int,
         status: TaskStatus,
-        es: int | None = None,
-        ef: int | None = None,
-        ls: int | None = None,
-        lf: int | None = None,
-        slack: int | None = None,
-        actual_hours: float | None = None,
+        start_date_actual: date | None = None,
+        end_date_actual: date | None = None,
+        percent_complete: int = 0,
     ) -> PlannedTask:
         row = self._db.fetch_one(
-            """
+            f"""
             INSERT INTO planned_tasks (
-                project_id,
-                project_code,
-                project_name,
-                document_id,
-                document_code,
-                revision_id,
-                revision_index,
-                name,
-                task_type,
-                assigned_to,
-                owner_name,
-                duration_days_planned,
-                work_hours_planned,
-                start_date_planned,
-                end_date_planned,
-                start_date_actual,
-                end_date_actual,
-                percent_complete,
-                status,
-                es,
-                ef,
-                ls,
-                lf,
-                slack,
-                actual_hours
+                project_id, project_code, project_name,
+                document_id, document_code, revision_id, revision_index,
+                name, task_type, assigned_to, owner_name,
+                duration_days_planned, work_hours_planned,
+                start_date_planned, end_date_planned,
+                start_date_actual, end_date_actual,
+                percent_complete, status
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            RETURNING id,
-                      project_id,
-                      project_code,
-                      project_name,
-                      document_id,
-                      document_code,
-                      revision_id,
-                      revision_index,
-                      name,
-                      task_type,
-                      assigned_to,
-                      owner_name,
-                      duration_days_planned,
-                      work_hours_planned,
-                      start_date_planned,
-                      end_date_planned,
-                      start_date_actual,
-                      end_date_actual,
-                      percent_complete,
-                      status,
-                      es,
-                      ef,
-                      ls,
-                      lf,
-                      slack,
-                      actual_hours
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING {self._COLUMNS}
             """,
             (
-                project_id,
-                project_code,
-                project_name,
-                document_id,
-                document_code,
-                revision_id,
-                revision_index,
-                name,
-                task_type.value,
-                assigned_to,
-                owner_name,
-                duration_days_planned,
-                work_hours_planned,
-                start_date_planned,
-                end_date_planned,
-                start_date_actual,
-                end_date_actual,
-                percent_complete,
-                status.value,
-                es,
-                ef,
-                ls,
-                lf,
-                slack,
-                actual_hours,
+                project_id, project_code, project_name,
+                document_id, document_code, revision_id, revision_index,
+                name, task_type.value, assigned_to, owner_name,
+                duration_days_planned, work_hours_planned,
+                start_date_planned, end_date_planned,
+                start_date_actual, end_date_actual,
+                percent_complete, status.value,
             ),
         )
         return self._row_to_model(row)
@@ -217,15 +116,36 @@ class PlannedTaskRepository:
                 status = %s
             WHERE id = %s
             """,
-            (
-                percent_complete,
-                start_date_actual,
-                end_date_actual,
-                actual_hours,
-                status.value,
-                task_id,
-            ),
+            (percent_complete, start_date_actual, end_date_actual,
+             actual_hours, status.value, task_id),
         )
+
+    def update_cpm_fields(self, tasks: Sequence[PlannedTask]) -> None:
+        for t in tasks:
+            self._db.execute(
+                """
+                UPDATE planned_tasks
+                SET es = %s, ef = %s, ls = %s, lf = %s, slack = %s
+                WHERE id = %s
+                """,
+                (t.es, t.ef, t.ls, t.lf, t.slack, t.id),
+            )
+
+    def count_by_project_and_status(
+        self, project_id: int, status: TaskStatus
+    ) -> int:
+        row = self._db.fetch_one(
+            "SELECT count(*) AS cnt FROM planned_tasks WHERE project_id = %s AND status = %s",
+            (project_id, status.value),
+        )
+        return int(row["cnt"]) if row else 0
+
+    def count_by_project(self, project_id: int) -> int:
+        row = self._db.fetch_one(
+            "SELECT count(*) AS cnt FROM planned_tasks WHERE project_id = %s",
+            (project_id,),
+        )
+        return int(row["cnt"]) if row else 0
 
     @staticmethod
     def _row_to_model(row: dict) -> PlannedTask:
@@ -234,26 +154,26 @@ class PlannedTaskRepository:
             project_id=row["project_id"],
             project_code=row["project_code"],
             project_name=row["project_name"],
-            document_id=row["document_id"],
-            document_code=row["document_code"],
-            revision_id=row["revision_id"],
-            revision_index=row["revision_index"],
+            document_id=row.get("document_id"),
+            document_code=row.get("document_code"),
+            revision_id=row.get("revision_id"),
+            revision_index=row.get("revision_index"),
             name=row["name"],
             task_type=TaskType(row["task_type"]),
-            assigned_to=row["assigned_to"],
-            owner_name=row["owner_name"],
+            assigned_to=row.get("assigned_to"),
+            owner_name=row.get("owner_name"),
             duration_days_planned=row["duration_days_planned"],
-            work_hours_planned=row["work_hours_planned"],
-            start_date_planned=row["start_date_planned"],
-            end_date_planned=row["end_date_planned"],
-            start_date_actual=row["start_date_actual"],
-            end_date_actual=row["end_date_actual"],
+            work_hours_planned=float(row["work_hours_planned"]),
+            start_date_planned=row.get("start_date_planned"),
+            end_date_planned=row.get("end_date_planned"),
+            start_date_actual=row.get("start_date_actual"),
+            end_date_actual=row.get("end_date_actual"),
             percent_complete=row["percent_complete"],
             status=TaskStatus(row["status"]),
-            es=row["es"],
-            ef=row["ef"],
-            ls=row["ls"],
-            lf=row["lf"],
-            slack=row["slack"],
-            actual_hours=row["actual_hours"],
+            es=row.get("es"),
+            ef=row.get("ef"),
+            ls=row.get("ls"),
+            lf=row.get("lf"),
+            slack=row.get("slack"),
+            actual_hours=float(row["actual_hours"]) if row.get("actual_hours") is not None else None,
         )

@@ -1,11 +1,14 @@
-# services/revision_service.py
-from typing import Optional, BinaryIO
+import logging
+from typing import BinaryIO, Optional
 
 from db.database import Database
-from models.enums import RevisionStatus, DocumentStatus
+from models.enums import DocumentStatus, RevisionStatus
+from models.revision import DocumentRevision
 from repositories.document_repository import DocumentRepository
 from repositories.revision_repository import RevisionRepository
 from services.storage_service import StorageService
+
+logger = logging.getLogger(__name__)
 
 
 class RevisionService:
@@ -15,7 +18,7 @@ class RevisionService:
         document_repo: DocumentRepository,
         revision_repo: RevisionRepository,
         storage: StorageService,
-    ):
+    ) -> None:
         self._db = db
         self._documents = document_repo
         self._revisions = revision_repo
@@ -29,7 +32,7 @@ class RevisionService:
         change_log: Optional[str],
         created_by: int,
         major: bool = False,
-    ):
+    ) -> DocumentRevision:
         with self._db.transaction():
             document = self._documents.get_by_id(document_id)
             if not document:
@@ -38,12 +41,13 @@ class RevisionService:
             latest_version = self._revisions.get_latest_version_number(document_id)
             new_version = latest_version + 1
 
-            last_letter, last_num = self._revisions.get_latest_letter_and_number(document_id)
-
             if latest_version == 0:
                 letter = "A"
                 number = 1
             else:
+                last_letter, last_num = self._revisions.get_latest_letter_and_number(
+                    document_id
+                )
                 if major:
                     letter = self._next_letter(last_letter)
                     number = 1
@@ -51,7 +55,7 @@ class RevisionService:
                     letter = last_letter
                     number = last_num + 1
 
-            revision_index = self._combine_index(letter, number)
+            revision_index = f"{letter}{number:02d}"
 
             file_path = self._storage.save_revision_file(
                 project_code=str(document.project_id),
@@ -74,38 +78,50 @@ class RevisionService:
             )
 
             self._documents.update_current_revision(document.id, revision.id)
+
             if document.status in (DocumentStatus.APPROVED, DocumentStatus.ARCHIVED):
-                self._documents.update_status(document.id, DocumentStatus.IN_WORK)
+                self._documents.update_status(
+                    document.id, DocumentStatus.IN_WORK, revision.id
+                )
 
-            self._revisions.mark_previous_revisions_superseded(document.id, revision.id)
+            self._revisions.mark_previous_revisions_superseded(
+                document.id, revision.id
+            )
 
+            logger.info(
+                "Created revision %s (v%d) for document %d",
+                revision_index, new_version, document_id,
+            )
             return revision
 
-    def approve_revision(self, revision_id: int, approved_by: int):
+    def approve_revision(self, revision_id: int, approved_by: int) -> None:
         with self._db.transaction():
             revision = self._revisions.get_by_id(revision_id)
             if not revision:
                 raise ValueError(f"Revision {revision_id} not found")
 
             self._revisions.approve_revision(revision_id, approved_by)
+
             document = self._documents.get_by_id(revision.document_id)
             if not document:
                 raise ValueError(f"Document {revision.document_id} not found")
 
             self._documents.update_current_revision(document.id, revision_id)
-            self._documents.update_status(document.id, DocumentStatus.APPROVED)
-            self._revisions.mark_previous_revisions_superseded(document.id, revision_id)
+            self._documents.update_status(
+                document.id, DocumentStatus.APPROVED, revision_id
+            )
+            self._revisions.mark_previous_revisions_superseded(
+                document.id, revision_id
+            )
 
-    @staticmethod
-    def _combine_index(letter: str, number: int) -> str:
-        return f"{letter}{number:02d}"
+            logger.info(
+                "Revision %d approved by user %d", revision_id, approved_by
+            )
 
     @staticmethod
     def _next_letter(letter: str) -> str:
-        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        if letter not in alphabet:
+        if not letter or letter < "A" or letter > "Z":
             return "A"
-        idx = alphabet.index(letter)
-        if idx == len(alphabet) - 1:
+        if letter == "Z":
             return "Z"
-        return alphabet[idx + 1]
+        return chr(ord(letter) + 1)

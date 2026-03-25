@@ -7,47 +7,24 @@ from models.enums import ProjectStatus
 
 
 class ProjectRepository:
-    def __init__(self, db: Database):
+    def __init__(self, db: Database) -> None:
         self._db = db
+
+    _COLUMNS = """
+        id, code, name, customer, status, manager_id,
+        start_date, end_date_planned, end_date_forecast, end_date_actual, created_at
+    """
 
     def get_by_id(self, project_id: int) -> Optional[Project]:
         row = self._db.fetch_one(
-            """
-            SELECT id,
-                   code,
-                   name,
-                   client_name,
-                   status,
-                   start_date_planned,
-                   end_date_planned,
-                   start_date_actual,
-                   end_date_actual,
-                   created_by,
-                   created_at
-            FROM projects
-            WHERE id = %s
-            """,
+            f"SELECT {self._COLUMNS} FROM projects WHERE id = %s",
             (project_id,),
         )
         return self._row_to_model(row) if row else None
 
-    def get_all(self) -> Sequence[Project]:
+    def list_all(self) -> Sequence[Project]:
         rows = self._db.fetch_all(
-            """
-            SELECT id,
-                   code,
-                   name,
-                   client_name,
-                   status,
-                   start_date_planned,
-                   end_date_planned,
-                   start_date_actual,
-                   end_date_actual,
-                   created_by,
-                   created_at
-            FROM projects
-            ORDER BY name
-            """
+            f"SELECT {self._COLUMNS} FROM projects ORDER BY name"
         )
         return [self._row_to_model(r) for r in rows]
 
@@ -55,45 +32,21 @@ class ProjectRepository:
         self,
         code: str,
         name: str,
-        client_name: str | None,
+        customer: str | None,
         status: ProjectStatus,
-        start_date_planned: date | None,
+        manager_id: int | None,
+        start_date: date | None,
         end_date_planned: date | None,
-        created_by: int,
     ) -> Project:
         row = self._db.fetch_one(
-            """
-            INSERT INTO projects (
-                code,
-                name,
-                client_name,
-                status,
-                start_date_planned,
-                end_date_planned,
-                created_by
-            )
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
-            RETURNING id,
-                      code,
-                      name,
-                      client_name,
-                      status,
-                      start_date_planned,
-                      end_date_planned,
-                      start_date_actual,
-                      end_date_actual,
-                      created_by,
-                      created_at
+            f"""
+            INSERT INTO projects (code, name, customer, status, manager_id,
+                                  start_date, end_date_planned)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING {self._COLUMNS}
             """,
-            (
-                code,
-                name,
-                client_name,
-                status.value,
-                start_date_planned,
-                end_date_planned,
-                created_by,
-            ),
+            (code, name, customer, status.value, manager_id,
+             start_date, end_date_planned),
         )
         return self._row_to_model(row)
 
@@ -101,24 +54,24 @@ class ProjectRepository:
         self,
         project_id: int,
         status: ProjectStatus,
-        start_date_actual: date | None = None,
         end_date_actual: date | None = None,
     ) -> None:
         self._db.execute(
             """
             UPDATE projects
             SET status = %s,
-                start_date_actual = COALESCE(%s, start_date_actual),
-                end_date_actual   = COALESCE(%s, end_date_actual)
+                end_date_actual = COALESCE(%s, end_date_actual)
             WHERE id = %s
             """,
-            (
-                status.value,
-                start_date_actual,
-                end_date_actual,
-                project_id,
-            ),
+            (status.value, end_date_actual, project_id),
         )
+
+    def count_by_status(self, status: ProjectStatus) -> int:
+        row = self._db.fetch_one(
+            "SELECT count(*) AS cnt FROM projects WHERE status = %s",
+            (status.value,),
+        )
+        return int(row["cnt"]) if row else 0
 
     @staticmethod
     def _row_to_model(row: dict) -> Project:
@@ -126,12 +79,12 @@ class ProjectRepository:
             id=row["id"],
             code=row["code"],
             name=row["name"],
-            client_name=row["client_name"],
+            customer=row.get("customer"),
             status=ProjectStatus(row["status"]),
-            start_date_planned=row["start_date_planned"],
-            end_date_planned=row["end_date_planned"],
-            start_date_actual=row["start_date_actual"],
-            end_date_actual=row["end_date_actual"],
-            created_by=row["created_by"],
+            manager_id=row.get("manager_id"),
+            start_date=row.get("start_date"),
+            end_date_planned=row.get("end_date_planned"),
+            end_date_forecast=row.get("end_date_forecast"),
+            end_date_actual=row.get("end_date_actual"),
             created_at=row["created_at"],
         )

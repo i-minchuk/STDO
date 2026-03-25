@@ -3,7 +3,7 @@ from enum import StrEnum
 
 class DocumentStatus(StrEnum):
     IN_WORK = "in_work"
-    ON_review = "on_review"
+    ON_REVIEW = "on_review"
     APPROVED = "approved"
     ARCHIVED = "archived"
 

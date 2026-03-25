@@ -12,36 +12,36 @@ class RevisionDTO(BaseModel):
     revision_number: int
     version_number: int
     status: str
-    file_name: Optional[str]
-    file_path: Optional[str]
-    change_log: Optional[str]
+    file_name: Optional[str] = None
+    file_path: Optional[str] = None
+    change_log: Optional[str] = None
     created_by: int
     created_at: datetime
-    approved_by: Optional[int]
-    approved_at: Optional[datetime]
+    approved_by: Optional[int] = None
+    approved_at: Optional[datetime] = None
 
 
 class WorkflowTaskDTO(BaseModel):
     task_id: int
     name: str
     task_type: str
-    assigned_to: Optional[int]
+    assigned_to: Optional[int] = None
     status: str
-    start_date_planned: Optional[date]
-    end_date_planned: Optional[date]
+    start_date_planned: Optional[date] = None
+    end_date_planned: Optional[date] = None
 
 
 class RevisionWorkflowDTO(BaseModel):
-    review_task: Optional[WorkflowTaskDTO]
-    approval_task: Optional[WorkflowTaskDTO]
+    review_task: Optional[WorkflowTaskDTO] = None
+    approval_task: Optional[WorkflowTaskDTO] = None
 
 
 class CreateRevisionRequestDTO(BaseModel):
-    change_log: Optional[str]
+    change_log: Optional[str] = None
     created_by: int
     major: bool = False
-    reviewer_id: Optional[int]
-    approver_id: Optional[int]
+    reviewer_id: Optional[int] = None
+    approver_id: Optional[int] = None
     review_duration_days: int = 2
     approval_duration_days: int = 1
 

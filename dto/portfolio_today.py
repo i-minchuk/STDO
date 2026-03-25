@@ -22,12 +22,12 @@ class ProjectTodayWorkloadDTO(BaseModel):
 
 class ProjectTodayOverviewDTO(BaseModel):
     project: ProjectShortDTO
-    manager: Optional[str]
-    summary_label: Optional[str]
-    start_date: Optional[date]
-    end_date_planned: Optional[date]
-    end_date_forecast: Optional[date]
-    end_date_actual: Optional[date]
+    manager: Optional[str] = None
+    summary_label: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date_planned: Optional[date] = None
+    end_date_forecast: Optional[date] = None
+    end_date_actual: Optional[date] = None
     health: ProjectHealthDTO
     today_workload: ProjectTodayWorkloadDTO
 
