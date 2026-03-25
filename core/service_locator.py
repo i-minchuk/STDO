@@ -11,6 +11,8 @@ from services.document_service import DocumentService
 from services.document_workflow_service import DocumentWorkflowService
 from services.cpm_scheduler_service import CPMSchedulerService
 from services.project_dashboard_service import ProjectDashboardService
+from repositories.user_repository import UserRepository
+from services.auth_service import AuthService
 
 
 class ServiceLocator:
@@ -25,9 +27,15 @@ class ServiceLocator:
         self.document_repo = DocumentRepository(self.db)
         self.revision_repo = RevisionRepository(self.db)
         self.task_repo = PlannedTaskRepository(self.db)
+        self.planned_task_repo = self.task_repo  # alias for API layer
         self.dep_repo = TaskDependencyRepository(self.db)
+        self.user_repo = UserRepository(self.db)
 
         # Services
+        self.auth_service = AuthService(
+            self.user_repo,
+            secret_key=getattr(cfg, 'secret_key', 'stdo-secret-key-change-in-production'),
+        )
         self.storage = StorageService(cfg.storage_root)
         self.revision_service = RevisionService(
             self.db, self.document_repo, self.revision_repo, self.storage,
