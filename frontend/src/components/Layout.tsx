@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, FolderOpen, FileText, ListTodo,
+  LayoutDashboard, FileText, ListTodo,
   Trophy, UserCircle, Users, LogOut, Menu, X
 } from 'lucide-react';
 import { useState } from 'react';
@@ -14,7 +14,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, isDemo, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -34,10 +34,14 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-gray-900 text-white flex flex-col transition-all duration-200`}>
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          {sidebarOpen && <span className="text-lg font-bold tracking-wide">STDO</span>}
+          {sidebarOpen && (
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold tracking-wide">STDO</span>
+              {isDemo && <span className="text-[10px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">DEMO</span>}
+            </div>
+          )}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-400 hover:text-white">
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -72,7 +76,6 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Main */}
       <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
         <Outlet />
       </main>

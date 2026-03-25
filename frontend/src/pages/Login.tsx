@@ -8,7 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginDemo } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,11 +18,20 @@ export default function Login() {
     try {
       await login(username, password);
       navigate('/dashboard');
-    } catch {
-      setError('Неверный логин или пароль');
+    } catch (err: any) {
+      if (err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error')) {
+        setError('Сервер недоступен. Используйте демо-режим или запустите бэкенд.');
+      } else {
+        setError('Неверный логин или пароль');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemo = () => {
+    loginDemo();
+    navigate('/dashboard');
   };
 
   return (
@@ -62,7 +71,18 @@ export default function Login() {
             {loading ? 'Вход...' : 'Войти'}
           </button>
         </form>
-        <p className="mt-4 text-xs text-center text-gray-400">По умолчанию: admin / admin123</p>
+
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <button
+            onClick={handleDemo}
+            className="w-full bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+          >
+            Демо-режим (без сервера)
+          </button>
+          <p className="mt-2 text-xs text-center text-gray-400">
+            Демо-режим работает на моковых данных без подключения к бэкенду
+          </p>
+        </div>
       </div>
     </div>
   );
