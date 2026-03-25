@@ -10,6 +10,9 @@ import Profile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import ProjectDetail from './pages/ProjectDetail';
 import AdminUsers from './pages/AdminUsers';
+import ImportExcel from './pages/ImportExcel';
+import Workload from './pages/Workload';
+import TenderAssess from './pages/TenderAssess';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -37,6 +40,9 @@ export default function App() {
             <Route path="documents" element={<Documents />} />
             <Route path="documents/:id" element={<DocumentDetail />} />
             <Route path="tasks" element={<Tasks />} />
+            <Route path="import" element={<ImportExcel />} />
+            <Route path="workload" element={<Workload />} />
+            <Route path="tender" element={<TenderAssess />} />
             <Route path="profile" element={<Profile />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />

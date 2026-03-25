@@ -123,3 +123,70 @@ export interface EngineerSPI {
   completed_tasks: number;
   spi: number | null;
 }
+
+// Excel Import
+export interface ExcelSheet {
+  name: string;
+  columns: string[];
+  total_rows: number;
+  preview: Record<string, string>[];
+}
+
+export interface ExcelPreview {
+  filename: string;
+  sheets: ExcelSheet[];
+}
+
+export interface TargetField {
+  field: string;
+  label: string;
+  required: boolean;
+}
+
+// Workload
+export interface EngineerWorkload {
+  engineer: string;
+  total_tasks: number;
+  active_tasks: number;
+  completed_tasks: number;
+  planned_hours: number;
+  actual_hours: number;
+  remaining_hours: number;
+  capacity_hours: number;
+  free_hours: number;
+  utilization_pct: number;
+  overdue_tasks: number;
+  status: 'overloaded' | 'busy' | 'available';
+}
+
+export interface WorkloadSummary {
+  total_engineers: number;
+  overloaded: number;
+  busy: number;
+  available: number;
+}
+
+export interface WorkloadResponse {
+  period: { from: string; to: string; work_days: number };
+  engineers: EngineerWorkload[];
+  summary: WorkloadSummary;
+}
+
+// Tender
+export interface TenderDoc {
+  doc_type: string;
+  count: number;
+  hours_per_doc: number;
+}
+
+export interface TenderRisk {
+  level: 'high' | 'medium' | 'low';
+  text: string;
+}
+
+export interface TenderResult {
+  tender: { name: string; customer: string; deadline: string; calendar_days: number; work_days: number };
+  requirements: { total_documents: number; total_hours: number; engineers_needed: number; by_type: { doc_type: string; count: number; hours: number }[] };
+  team_capacity: { total_engineers: number; available_engineers: number; capacity_hours: number; current_load_hours: number; free_hours: number; utilization_pct: number };
+  assessment: { decision: 'GO' | 'RISKY' | 'NO_GO'; decision_label: string; confidence: string; feasibility_pct: number; risks: TenderRisk[] };
+}

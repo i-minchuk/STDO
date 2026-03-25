@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
     )
     cfg = Config()
     init_locator(cfg)
-    logger.info("STDO v0.2.0 started")
+    logger.info("STDO v0.3.0 started")
     yield
     get_locator().db.close()
     logger.info("STDO stopped")
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="STDO API",
-    version="0.2.0",
+    version="0.3.0",
     description="Система учёта технической документации",
     lifespan=lifespan,
 )
@@ -56,6 +56,9 @@ from api.dashboard_api import router as dashboard_router
 from api.gamification_api import router as gamification_router
 from api.users_api import router as users_router
 from api.internal_project_api import router as internal_router
+from api.import_api import router as import_router
+from api.workload_api import router as workload_router
+from api.tender_api import router as tender_router
 
 app.include_router(auth_router)
 app.include_router(project_router)
@@ -66,8 +69,11 @@ app.include_router(dashboard_router)
 app.include_router(gamification_router)
 app.include_router(users_router)
 app.include_router(internal_router)
+app.include_router(import_router)
+app.include_router(workload_router)
+app.include_router(tender_router)
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": "0.2.0"}
+    return {"status": "ok", "version": "0.3.0"}

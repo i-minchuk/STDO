@@ -1,8 +1,8 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, FileText, ListTodo,
-  Trophy, UserCircle, Users, LogOut, Menu, X
+  LayoutDashboard, FileText, ListTodo, Trophy, UserCircle,
+  Users, LogOut, Menu, X, BarChart3, Upload, ClipboardCheck
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,6 +24,9 @@ export default function Layout() {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Дашборд' },
     { to: '/documents', icon: FileText, label: 'Документы' },
     { to: '/tasks', icon: ListTodo, label: 'Задачи' },
+    { to: '/import', icon: Upload, label: 'Импорт Excel' },
+    { to: '/workload', icon: BarChart3, label: 'Загруженность' },
+    { to: '/tender', icon: ClipboardCheck, label: 'Оценка тендера' },
     { to: '/leaderboard', icon: Trophy, label: 'Лидерборд' },
     { to: '/profile', icon: UserCircle, label: 'Мой кабинет' },
   ];
@@ -34,19 +37,19 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-gray-900 text-white flex flex-col transition-all duration-200`}>
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-gray-900 text-white flex flex-col transition-all duration-200 flex-shrink-0`}>
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
-              <span className="text-lg font-bold tracking-wide">STDO</span>
-              {isDemo && <span className="text-[10px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">DEMO</span>}
+              <span className="text-lg font-bold tracking-wide">СТДО</span>
+              {isDemo && <span className="text-[10px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">ДЕМО</span>}
             </div>
           )}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-400 hover:text-white">
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
-        <nav className="flex-1 py-4 space-y-1">
+        <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
           {links.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
