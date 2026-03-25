@@ -12,8 +12,8 @@ class ProjectShortDTO(BaseModel):
 class DocumentShortDTO(BaseModel):
     id: int
     project_id: int
-    project_code: Optional[str]
+    project_code: Optional[str] = None
     code: str
     title: str
     status: str
-    current_revision_id: Optional[int]
+    current_revision_id: Optional[int] = None

@@ -1,17 +1,20 @@
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
-from models.enums import ProjectStatus  # сделай enum наподобие TaskStatus
+
+from models.enums import ProjectStatus
 
 
+@dataclass
 class Project:
     id: int
-    code: str                 # Короткий код проекта, вроде "P-001"
-    name: str                 # Название проекта
-    client_name: Optional[str]
+    code: str
+    name: str
+    customer: Optional[str]
     status: ProjectStatus
-    start_date_planned: Optional[date]
+    manager_id: Optional[int]
+    start_date: Optional[date]
     end_date_planned: Optional[date]
-    start_date_actual: Optional[date]
+    end_date_forecast: Optional[date]
     end_date_actual: Optional[date]
-    created_by: int
     created_at: datetime
