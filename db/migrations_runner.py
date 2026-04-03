@@ -2,22 +2,24 @@ import os
 import logging
 
 import psycopg
-print(psycopg.__version__)
 from psycopg.rows import dict_row
 
-from config import load_config
+from config import Config
 
 logger = logging.getLogger(__name__)
 
 
 def run_migrations() -> None:
-    cfg = load_config()
+    """Run all SQL migrations from migrations/ directory."""
+    cfg = Config()
+    # For migrations, use a single connection (not pool)
     conn = psycopg.connect(cfg.db_dsn, row_factory=dict_row)
     conn.autocommit = True
 
     migrations_dir = os.path.join(os.path.dirname(__file__), "migrations")
     if not os.path.isdir(migrations_dir):
         logger.warning("Migrations directory not found: %s", migrations_dir)
+        conn.close()
         return
 
     files = sorted(f for f in os.listdir(migrations_dir) if f.endswith(".sql"))

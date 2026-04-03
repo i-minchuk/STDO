@@ -22,7 +22,8 @@ class ServiceLocator:
     """Application-level dependency container. Created once at startup."""
 
     def __init__(self, cfg: Config) -> None:
-        self.db = Database(cfg.db_dsn)
+        # Initialize DB with connection pooling: min 2, max 10 concurrent connections
+        self.db = Database(cfg.db_dsn, min_size=2, max_size=10)
         self.db.connect()
 
         # Repositories
