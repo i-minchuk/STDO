@@ -2,6 +2,7 @@ import os
 import logging
 
 import psycopg
+print(psycopg.__version__)
 from psycopg.rows import dict_row
 
 from config import load_config
@@ -24,7 +25,8 @@ def run_migrations() -> None:
     with conn.cursor() as cur:
         for fname in files:
             path = os.path.join(migrations_dir, fname)
-            sql = open(path, "r", encoding="utf-8").read().strip()
+            with open(path, "r", encoding="utf-8") as f:
+                sql = f.read().strip()
             if not sql:
                 logger.info("Skipping empty migration: %s", fname)
                 continue

@@ -1,13 +1,41 @@
+from __future__ import annotations
+from dataclasses import dataclass
 import os
-from dataclasses import dataclass, field
 
 
-@dataclass(frozen=True)
+@dataclass
 class Config:
+    """
+    Конфигурация ДокПоток IRIS.
+
+    Варианты использования:
+    - Config()           — берёт всё из env или дефолтов.
+    - Config(db_dsn=..., storage_root=...) — явные параметры.
+    """
+
     db_dsn: str
     storage_root: str
-    log_level: str = "INFO"
-    cors_origins: list[str] = field(default_factory=lambda: ["*"])
+
+    def __init__(
+        self,
+        db_dsn: str | None = None,
+        storage_root: str | None = None,
+    ) -> None:
+        # DSN к Postgres: env → явный параметр → дефолт
+        self.db_dsn = db_dsn or os.getenv(
+            "IRIS_DB_DSN",
+            # Поменяй на свои креды, если нужно:
+            "postgresql://postgres:Qwerty852@localhost:5432/iris",
+        )
+
+        # Каталог для файлов (загруженные документы, отчёты)
+        default_storage = os.path.join(os.path.dirname(__file__), "storage")
+        self.storage_root = storage_root or os.getenv(
+            "IRIS_STORAGE_ROOT",
+            default_storage,
+        )
+
+        os.makedirs(self.storage_root, exist_ok=True)
 
 
 def load_config() -> Config:

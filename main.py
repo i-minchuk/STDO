@@ -1,16 +1,19 @@
-"""STDO — Система учёта технической документации. Entry point."""
+"""ДокПоток IRIS — Система управления инженерной документацией. Entry point."""
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from config import Config
 from core.service_locator import init_locator, get_locator
 
-logger = logging.getLogger("stdo")
+logger = logging.getLogger("ДокПоток IRIS")
 
 
 @asynccontextmanager
@@ -19,16 +22,18 @@ async def lifespan(app: FastAPI):
         level=logging.INFO,
         format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
     )
-    cfg = Config()
+    cfg = Config()  # ← теперь работает, т.к. у Config есть дефолты
     init_locator(cfg)
-    logger.info("STDO v0.3.0 started")
-    yield
-    get_locator().db.close()
-    logger.info("STDO stopped")
+    logger.info("ДокПоток IRIS v0.3.0 started")
+    try:
+        yield
+    finally:
+        get_locator().db.close()
+        logger.info("ДокПоток IRIS stopped")
 
 
 app = FastAPI(
-    title="STDO API",
+    title="ДокПоток IRIS API",
     version="0.3.0",
     description="Система учёта технической документации",
     lifespan=lifespan,
@@ -59,6 +64,9 @@ from api.internal_project_api import router as internal_router
 from api.import_api import router as import_router
 from api.workload_api import router as workload_router
 from api.tender_api import router as tender_router
+from api.remarks_api import router as remarks_router
+from api.reports_api import router as reports_router
+from api.vdr_mdr_api import router as vdr_mdr_router
 
 app.include_router(auth_router)
 app.include_router(project_router)
@@ -72,6 +80,31 @@ app.include_router(internal_router)
 app.include_router(import_router)
 app.include_router(workload_router)
 app.include_router(tender_router)
+app.include_router(remarks_router)
+app.include_router(reports_router)
+app.include_router(vdr_mdr_router)
+
+# --- Serve frontend build (Vite) ---
+
+FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+
+if os.path.isdir(FRONTEND_DIST):
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")),
+        name="assets",
+    )
+
+    @app.get("/{full_path:path}")
+    def serve_spa(full_path: str):
+        """
+        Catch-all: всё, что не /api/* и не /assets/* → index.html.
+        SPA-роутинг на фронте.
+        """
+        index_path = os.path.join(FRONTEND_DIST, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path, media_type="text/html")
+        return {"error": "Frontend build not found"}
 
 
 @app.get("/health")

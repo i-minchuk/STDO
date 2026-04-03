@@ -30,6 +30,11 @@ def create_user(body: RegisterRequest, current_user: User = Depends(require_role
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
+    except Exception as e:
+        # Ловим UniqueViolation от psycopg2
+        if "unique" in str(e).lower() or "duplicate" in str(e).lower():
+            raise HTTPException(409, "Пользователь с таким именем или email уже существует")
+        raise HTTPException(500, f"Ошибка сохранения: {e}")
     return UserResponse(
         id=user.id, username=user.username, email=user.email,
         full_name=user.full_name, role=user.role, is_active=user.is_active,

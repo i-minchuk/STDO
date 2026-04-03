@@ -1,4 +1,4 @@
-# STDO — Technical Documentation Management System
+# ДокПоток IRIS — Система управления инженерной документацией 
 
 System for managing technical documentation (drawings, PDFs, specifications) with project planning, CPM scheduling, and revision workflow control.
 

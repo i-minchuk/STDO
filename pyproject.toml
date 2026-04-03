@@ -1,5 +1,5 @@
 [project]
-name = "stdo"
+name = "ДокПоток IRIS"
 version = "0.1.0"
 description = "Technical Documentation Management System with CPM Planning"
 requires-python = ">=3.12"

@@ -5,6 +5,9 @@ from repositories.document_repository import DocumentRepository
 from repositories.revision_repository import RevisionRepository
 from repositories.planned_task_repository import PlannedTaskRepository
 from repositories.task_dependency_repository import TaskDependencyRepository
+from repositories.remark_repository import RemarkRepository
+from repositories.vdr_mdr_repository import VDRRepository, MDRRepository
+from services.remark_service import RemarkService
 from services.storage_service import StorageService
 from services.revision_service import RevisionService
 from services.document_service import DocumentService
@@ -30,11 +33,14 @@ class ServiceLocator:
         self.planned_task_repo = self.task_repo  # alias for API layer
         self.dep_repo = TaskDependencyRepository(self.db)
         self.user_repo = UserRepository(self.db)
+        self.remark_repo = RemarkRepository(self.db)
+        self.vdr_repo = VDRRepository(self.db)
+        self.mdr_repo = MDRRepository(self.db)
 
         # Services
         self.auth_service = AuthService(
             self.user_repo,
-            secret_key=getattr(cfg, 'secret_key', 'stdo-secret-key-change-in-production'),
+            secret_key=getattr(cfg, 'secret_key', 'iris-secret-key-change-in-production'),
         )
         self.storage = StorageService(cfg.storage_root)
         self.revision_service = RevisionService(
@@ -58,7 +64,7 @@ class ServiceLocator:
             self.cpm_scheduler,
             self.project_dashboard,
         )
-
+        self.remark_service = RemarkService(self.remark_repo)
 
 # Module-level singleton — set by main.py at startup
 _locator: ServiceLocator | None = None

@@ -1,0 +1,85 @@
+Запуск проекта STDO на Windows.
+
+1. Подготовка (один раз):
+Установить PostgreSQL:
+
+Скачать установщик с официального сайта.
+Порт оставить 5432
+Пользователь: postgres
+Пароль Qwerty852
+Создать базу stdo через psql или PgAdmin:
+
+sql
+CREATE DATABASE stdo;
+В config.py указать корректный DSN (под твой пароль):
+
+python
+self.db_dsn = db_dsn or os.getenv(
+    "STDO_DB_DSN",
+    "postgresql://postgres:ТВОЙ_ПАРОЛЬ@localhost:5432/stdo",
+)
+Установить Python‑зависимости (из корня проекта STDO):
+
+bash
+cd C:\Users\Novikova\Desktop\STDO\STDO
+pip install -r requirements.txt
+
+Установить фронтовые зависимости (один раз):
+
+bash
+cd C:\Users\Novikova\Desktop\STDO\STDO\frontend
+npm install
+
+2. Сборка фронтенда (при изменениях UI)
+Каждый раз, когда меняешь фронтенд и хочешь обновить прод‑версию:
+
+bash
+cd C:\Users\Novikova\Desktop\STDO\STDO\frontend
+npm run build
+После этого в frontend/dist лежит актуальный React‑бандл.
+
+3. Запуск всего приложения (бэкенд + фронтенд)
+Каждый рабочий запуск делается так:
+
+Убедиться, что служба PostgreSQL запущена:
+
+Win+R → services.msc → служба postgresql-x64-.. должна быть в статусе «Запущена».
+
+В консоли:
+
+bash
+cd C:\Users\Novikova\Desktop\STDO\STDO
+uvicorn main:app --host 0.0.0.0 --port 8000
+Открыть в браузере:
+
+UI: http://127.0.0.1:8000
+
+API docs: http://127.0.0.1:8000/docs
+
+Health: http://127.0.0.1:8000/health
+
+4. Режим разработки
+Если нужно быстро править фронт с hot‑reload:
+
+Запустить бэкенд (как выше):
+
+bash
+cd C:\Users\Novikova\Desktop\STDO\STDO
+uvicorn main:app --reload --port 8000
+Во втором терминале — фронт:
+
+bash
+cd C:\Users\Novikova\Desktop\STDO\STDO\frontend
+npm run dev
+Работать с UI по адресу http://localhost:5173.
+
+5. Мини‑чеклист если «не работает»
+Uvicorn не стартует → смотри traceback в консоли (часто: БД недоступна).
+
+Сообщение connection refused к Postgres → служба БД не запущена.
+
+404 на UI по :8000:
+
+не собран фронт (npm run build),
+
+или нет блока монтирования frontend/dist в main.py.
