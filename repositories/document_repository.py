@@ -28,6 +28,12 @@ class DocumentRepository:
         )
         return [self._row_to_model(r) for r in rows]
 
+    def get_all(self) -> Sequence[Document]:
+        rows = self._db.fetch_all(
+            f"SELECT {self._COLUMNS} FROM documents ORDER BY code"
+        )
+        return [self._row_to_model(r) for r in rows]
+
     def insert(
         self,
         project_id: int,

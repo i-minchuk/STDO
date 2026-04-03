@@ -39,6 +39,15 @@ class PlannedTaskRepository:
         )
         return [self._row_to_model(r) for r in rows]
 
+    def get_all(self) -> Sequence[PlannedTask]:
+        rows = self._db.fetch_all(
+            f"""
+            SELECT {self._COLUMNS} FROM planned_tasks
+            ORDER BY start_date_planned NULLS FIRST, id
+            """
+        )
+        return [self._row_to_model(r) for r in rows]
+
     def get_by_revision_id(self, revision_id: int) -> Sequence[PlannedTask]:
         rows = self._db.fetch_all(
             f"""

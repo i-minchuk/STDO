@@ -26,9 +26,13 @@ def list_documents(
         docs = [d for d in docs if q in (d.title or "").lower() or q in (d.code or "").lower()]
     return [
         {
-            "id": d.id, "code": d.code, "title": d.title,
-            "project_id": d.project_id, "status": d.status.value if hasattr(d.status, 'value') else d.status,
-            "doc_type": d.doc_type, "current_revision_id": d.current_revision_id,
+            "id": d.id,
+            "code": d.code,
+            "title": d.title,
+            "project_id": d.project_id,
+            "status": d.status.value,
+            "discipline": d.discipline,
+            "current_revision_id": d.current_revision_id,
         }
         for d in docs
     ]
@@ -40,15 +44,23 @@ def get_document(doc_id: int, current_user: User = Depends(get_current_user)):
     doc = loc.document_repo.get_by_id(doc_id)
     if not doc:
         raise HTTPException(404, "Document not found")
-    revisions = loc.revision_repo.get_by_document(doc_id)
+    revisions = loc.revision_repo.get_revisions_for_document(doc_id)
     return {
-        "id": doc.id, "code": doc.code, "title": doc.title,
-        "project_id": doc.project_id, "status": doc.status.value if hasattr(doc.status, 'value') else doc.status,
-        "doc_type": doc.doc_type, "current_revision_id": doc.current_revision_id,
+        "id": doc.id,
+        "code": doc.code,
+        "title": doc.title,
+        "project_id": doc.project_id,
+        "status": doc.status.value,
+        "discipline": doc.discipline,
+        "current_revision_id": doc.current_revision_id,
         "revisions": [
             {
-                "id": r.id, "letter": r.letter, "number": r.number,
-                "status": r.status, "created_at": str(r.created_at) if r.created_at else None,
+                "id": r.id,
+                "revision_index": r.revision_index,
+                "revision_letter": r.revision_letter,
+                "revision_number": r.revision_number,
+                "status": r.status.value,
+                "created_at": str(r.created_at) if r.created_at else None,
                 "file_path": r.file_path,
             }
             for r in revisions

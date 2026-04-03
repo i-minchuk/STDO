@@ -6,6 +6,7 @@ from typing import List, Optional
 from core.auth import get_current_user, require_role
 from core.service_locator import get_locator
 from models.user import User
+from models.enums import TaskStatus
 
 router = APIRouter(prefix="/api/tender", tags=["tender"])
 
@@ -51,14 +52,14 @@ def assess_tender(
     # Текущая загрузка инженеров
     by_eng = {}
     for t in tasks:
-        eng = getattr(t, 'engineer', None)
+        eng = t.owner_name
         if not eng:
             continue
         if eng not in by_eng:
             by_eng[eng] = {"remaining_hours": 0, "active_tasks": 0}
-        if t.status != "completed":
-            ph = getattr(t, 'planned_hours', 0) or 0
-            ah = getattr(t, 'actual_hours', 0) or 0
+        if t.status != TaskStatus.COMPLETED:
+            ph = t.work_hours_planned or 0
+            ah = t.actual_hours or 0
             by_eng[eng]["remaining_hours"] += max(0, ph - ah)
             by_eng[eng]["active_tasks"] += 1
 

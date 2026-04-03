@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from core.auth import get_current_user
 from core.service_locator import get_locator
 from models.user import User
+from models.enums import TaskStatus, ProjectStatus
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
@@ -10,21 +11,21 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 @router.get("/portfolio")
 def portfolio(current_user: User = Depends(get_current_user)):
     loc = get_locator()
-    projects = loc.project_repo.get_all()
+    projects = loc.project_repo.list_all()
     result = []
     for p in projects:
         tasks = loc.planned_task_repo.get_by_project_id(p.id)
         total = len(tasks)
-        completed = sum(1 for t in tasks if t.status == "completed")
+        completed = sum(1 for t in tasks if t.status == TaskStatus.COMPLETED)
         spi = round(completed / total, 2) if total > 0 else None
         result.append({
             "id": p.id,
-            "number": p.number,
+            "code": p.code,
             "name": p.name,
-            "status": p.status,
-            "customer": getattr(p, 'customer', ''),
+            "status": p.status.value,
+            "customer": p.customer,
             "start_date": str(p.start_date) if p.start_date else None,
-            "end_date_plan": str(p.end_date_plan) if p.end_date_plan else None,
+            "end_date_planned": str(p.end_date_planned) if p.end_date_planned else None,
             "total_tasks": total,
             "completed_tasks": completed,
             "spi": spi,
@@ -41,19 +42,22 @@ def portfolio(current_user: User = Depends(get_current_user)):
 
 @router.get("/project/{project_id}")
 def project_health(project_id: int, current_user: User = Depends(get_current_user)):
+    from datetime import date as date_module
     loc = get_locator()
     project = loc.project_repo.get_by_id(project_id)
     if not project:
         raise HTTPException(404, "Project not found")
     tasks = loc.planned_task_repo.get_by_project_id(project_id)
     total = len(tasks)
-    completed = sum(1 for t in tasks if t.status == "completed")
-    in_progress = sum(1 for t in tasks if t.status == "in_progress")
-    critical = [t for t in tasks if getattr(t, 'is_critical', False)]
-    overdue = sum(1 for t in tasks if t.status != "completed" and t.planned_finish and str(t.planned_finish) < str(__import__('datetime').date.today()))
+    completed = sum(1 for t in tasks if t.status == TaskStatus.COMPLETED)
+    in_progress = sum(1 for t in tasks if t.status == TaskStatus.IN_PROGRESS)
+    critical = [t for t in tasks if t.slack is not None and t.slack == 0]
+    today = date_module.today()
+    overdue = sum(1 for t in tasks if t.status != TaskStatus.COMPLETED
+                  and t.end_date_planned and t.end_date_planned < today)
     spi = round(completed / total, 2) if total > 0 else None
     return {
-        "project": {"id": project.id, "name": project.name, "number": project.number},
+        "project": {"id": project.id, "name": project.name, "code": project.code},
         "spi": spi,
         "total_tasks": total,
         "completed_tasks": completed,
@@ -70,11 +74,11 @@ def engineer_spi(project_id: int, current_user: User = Depends(get_current_user)
     tasks = loc.planned_task_repo.get_by_project_id(project_id)
     by_eng = {}
     for t in tasks:
-        eng = getattr(t, 'engineer', None) or "Не назначен"
+        eng = t.owner_name or "Не назначен"
         if eng not in by_eng:
             by_eng[eng] = {"total": 0, "completed": 0}
         by_eng[eng]["total"] += 1
-        if t.status == "completed":
+        if t.status == TaskStatus.COMPLETED:
             by_eng[eng]["completed"] += 1
     return [
         {

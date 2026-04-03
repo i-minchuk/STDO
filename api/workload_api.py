@@ -5,6 +5,7 @@ from typing import Optional
 from core.auth import get_current_user
 from core.service_locator import get_locator
 from models.user import User
+from models.enums import TaskStatus
 
 router = APIRouter(prefix="/api/workload", tags=["workload"])
 
@@ -30,7 +31,7 @@ def engineer_workload(
 
     by_eng = {}
     for t in tasks:
-        eng = getattr(t, 'engineer', None) or "Не назначен"
+        eng = t.owner_name or "Не назначен"
         if eng not in by_eng:
             by_eng[eng] = {
                 "total_tasks": 0, "active_tasks": 0, "completed_tasks": 0,
@@ -39,16 +40,16 @@ def engineer_workload(
             }
         data = by_eng[eng]
         data["total_tasks"] += 1
-        ph = getattr(t, 'planned_hours', 0) or 0
-        ah = getattr(t, 'actual_hours', 0) or 0
+        ph = t.work_hours_planned or 0
+        ah = t.actual_hours or 0
 
-        if t.status == "completed":
+        if t.status == TaskStatus.COMPLETED:
             data["completed_tasks"] += 1
         else:
             data["active_tasks"] += 1
             data["planned_hours"] += ph
             data["remaining_hours"] += max(0, ph - ah)
-            if t.planned_finish and str(t.planned_finish) < str(today):
+            if t.end_date_planned and t.end_date_planned < today:
                 data["overdue_tasks"] += 1
         data["actual_hours"] += ah
 

@@ -6,6 +6,7 @@ from typing import Optional
 from core.auth import get_current_user
 from core.service_locator import get_locator
 from models.user import User
+from models.enums import TaskStatus
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -20,13 +21,13 @@ class TimeLog(BaseModel):
 @router.get("/today")
 def today_tasks(current_user: User = Depends(get_current_user)):
     loc = get_locator()
-    tasks = loc.planned_task_repo.get_all()
     today = date.today()
+    tasks = loc.planned_task_repo.get_all()
     result = []
     for t in tasks:
-        if t.status in ("completed",):
+        if t.status == TaskStatus.COMPLETED:
             continue
-        if t.planned_start and t.planned_start <= today:
+        if t.start_date_planned and t.start_date_planned <= today:
             result.append(_task_to_dict(t))
     return result
 
@@ -53,7 +54,19 @@ def update_status(task_id: int, body: StatusUpdate, current_user: User = Depends
     task = loc.planned_task_repo.get_by_id(task_id)
     if not task:
         raise HTTPException(404, "Task not found")
-    task.status = body.status
+    try:
+        new_status = TaskStatus(body.status)
+    except ValueError:
+        raise HTTPException(400, f"Invalid status: {body.status}")
+
+    loc.planned_task_repo.update_progress(
+        task_id=task_id,
+        percent_complete=100 if new_status == TaskStatus.COMPLETED else task.percent_complete,
+        start_date_actual=task.start_date_actual,
+        end_date_actual=date.today() if new_status == TaskStatus.COMPLETED else task.end_date_actual,
+        actual_hours=task.actual_hours,
+        status=new_status,
+    )
     return {"ok": True, "status": body.status}
 
 
@@ -68,18 +81,21 @@ def log_time(task_id: int, body: TimeLog, current_user: User = Depends(get_curre
 
 def _task_to_dict(t) -> dict:
     return {
-        "id": t.id, "project_id": t.project_id,
+        "id": t.id,
+        "project_id": t.project_id,
         "document_id": t.document_id,
-        "task_type": t.task_type if hasattr(t, 'task_type') else None,
-        "title": getattr(t, 'title', None) or getattr(t, 'document_code', ''),
-        "status": t.status,
-        "planned_start": str(t.planned_start) if t.planned_start else None,
-        "planned_finish": str(t.planned_finish) if t.planned_finish else None,
-        "planned_hours": t.planned_hours,
-        "actual_hours": getattr(t, 'actual_hours', 0),
-        "percent_complete": getattr(t, 'percent_complete', 0),
-        "engineer": getattr(t, 'engineer', None),
-        "is_critical": getattr(t, 'is_critical', False),
-        "es": t.es, "ef": t.ef, "ls": t.ls, "lf": t.lf,
+        "task_type": t.task_type.value if t.task_type else None,
+        "name": t.name,
+        "status": t.status.value,
+        "start_date_planned": str(t.start_date_planned) if t.start_date_planned else None,
+        "end_date_planned": str(t.end_date_planned) if t.end_date_planned else None,
+        "work_hours_planned": t.work_hours_planned,
+        "actual_hours": t.actual_hours,
+        "percent_complete": t.percent_complete,
+        "assigned_to": t.assigned_to,
+        "es": t.es,
+        "ef": t.ef,
+        "ls": t.ls,
+        "lf": t.lf,
         "slack": t.slack,
     }
