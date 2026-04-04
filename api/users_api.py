@@ -1,24 +1,31 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from core.auth import require_role
 from core.service_locator import get_locator
 from dto.auth import RegisterRequest, UserResponse
+from dto.pagination import PaginatedResponse
 from models.user import User
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 
 @router.get("/")
-def list_users(current_user: User = Depends(require_role("admin", "manager"))):
+def list_users(
+    limit: int = Query(20, gt=0, le=1000),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(require_role("admin", "manager"))
+):
+    """List users with pagination support."""
     loc = get_locator()
-    users = loc.user_repo.get_all()
-    return [
+    users, total = loc.user_repo.get_all_paginated(limit=limit, offset=offset)
+    items = [
         UserResponse(
             id=u.id, username=u.username, email=u.email,
             full_name=u.full_name, role=u.role, is_active=u.is_active,
         )
         for u in users
     ]
+    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.post("/", response_model=UserResponse)

@@ -2,6 +2,8 @@
 PyTest configuration and fixtures for integration tests.
 """
 import os
+
+import psycopg
 import pytest
 from datetime import date, datetime, timezone
 
@@ -11,6 +13,15 @@ from core.service_locator import ServiceLocator, init_locator, get_locator
 from models.enums import ProjectStatus, DocumentStatus, TaskStatus, TaskType
 
 
+def _is_db_available(dsn: str) -> bool:
+    try:
+        conn = psycopg.connect(dsn, connect_timeout=2)
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+
 @pytest.fixture(scope="function")
 def test_db() -> Database:
     """Create test database connection (single connection, not pool)."""
@@ -18,6 +29,12 @@ def test_db() -> Database:
         "TEST_DB_DSN",
         "postgresql://postgres:Qwerty852@localhost:5432/iris_test",
     )
+
+    if not _is_db_available(db_dsn):
+        pytest.skip(
+            "Integration database unavailable. Start PostgreSQL and set TEST_DB_DSN to run integration tests."
+        )
+
     db = Database(db_dsn, min_size=1, max_size=1)
     db.connect()
     yield db
@@ -42,6 +59,8 @@ def cleanup_test_db(test_db):
     """Clean up test database before each test."""
     # Clean up in dependency order (foreign keys first)
     cleanup_sql = """
+    TRUNCATE TABLE notifications CASCADE;
+    TRUNCATE TABLE gamification_badges CASCADE;
     TRUNCATE TABLE gamification_events CASCADE;
     TRUNCATE TABLE time_logs CASCADE;
     TRUNCATE TABLE remarks CASCADE;

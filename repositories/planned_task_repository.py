@@ -48,6 +48,54 @@ class PlannedTaskRepository:
         )
         return [self._row_to_model(r) for r in rows]
 
+    def get_all_paginated(self, limit: int = 20, offset: int = 0) -> tuple[Sequence[PlannedTask], int]:
+        """List all tasks with pagination.
+
+        Returns:
+            Tuple of (tasks list, total count)
+        """
+        rows = self._db.fetch_all(
+            f"""
+            SELECT {self._COLUMNS} FROM planned_tasks
+            ORDER BY start_date_planned NULLS FIRST, id
+            LIMIT %s OFFSET %s
+            """,
+            (limit, offset),
+        )
+        tasks = [self._row_to_model(r) for r in rows]
+
+        # Get total count
+        total_row = self._db.fetch_one("SELECT count(*) AS cnt FROM planned_tasks")
+        total = int(total_row["cnt"]) if total_row else 0
+
+        return tasks, total
+
+    def get_by_project_id_paginated(self, project_id: int, limit: int = 20, offset: int = 0) -> tuple[Sequence[PlannedTask], int]:
+        """List tasks by project with pagination.
+
+        Returns:
+            Tuple of (tasks list, total count)
+        """
+        rows = self._db.fetch_all(
+            f"""
+            SELECT {self._COLUMNS} FROM planned_tasks
+            WHERE project_id = %s
+            ORDER BY start_date_planned NULLS FIRST, id
+            LIMIT %s OFFSET %s
+            """,
+            (project_id, limit, offset),
+        )
+        tasks = [self._row_to_model(r) for r in rows]
+
+        # Get total count
+        total_row = self._db.fetch_one(
+            "SELECT count(*) AS cnt FROM planned_tasks WHERE project_id = %s",
+            (project_id,),
+        )
+        total = int(total_row["cnt"]) if total_row else 0
+
+        return tasks, total
+
     def get_by_revision_id(self, revision_id: int) -> Sequence[PlannedTask]:
         rows = self._db.fetch_all(
             f"""

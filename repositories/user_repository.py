@@ -35,6 +35,26 @@ class UserRepository:
         rows = self._db.fetch_all(sql)
         return [User.from_row(r) for r in rows]
 
+    def get_all_paginated(self, limit: int = 20, offset: int = 0, active_only: bool = False) -> tuple[List[User], int]:
+        """List all users with pagination.
+
+        Returns:
+            Tuple of (users list, total count)
+        """
+        where_clause = "WHERE is_active = TRUE" if active_only else ""
+        rows = self._db.fetch_all(
+            f"SELECT {self._COLUMNS} FROM users {where_clause} ORDER BY id LIMIT %s OFFSET %s",
+            (limit, offset),
+        )
+        users = [User.from_row(r) for r in rows]
+
+        # Get total count
+        where_for_count = "WHERE is_active = TRUE" if active_only else ""
+        total_row = self._db.fetch_one(f"SELECT count(*) AS cnt FROM users {where_for_count}")
+        total = int(total_row["cnt"]) if total_row else 0
+
+        return users, total
+
     def create(self, username: str, email: str, password_hash: str,
                full_name: str, role: str = "engineer") -> User:
         row = self._db.fetch_one(

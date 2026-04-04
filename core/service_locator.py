@@ -14,8 +14,13 @@ from services.document_service import DocumentService
 from services.document_workflow_service import DocumentWorkflowService
 from services.cpm_scheduler_service import CPMSchedulerService
 from services.project_dashboard_service import ProjectDashboardService
-from repositories.user_repository import UserRepository
-from services.auth_service import AuthService
+from services.time_calculation_service import TimeCalculationService
+from repositories.gamification_event_repository import GamificationEventRepository
+from repositories.gamification_badge_repository import GamificationBadgeRepository
+from repositories.notification_repository import NotificationRepository
+from repositories.daily_quest_repository import DailyQuestRepository
+from repositories.combo_achievement_repository import ComboAchievementRepository
+from repositories.work_schedule_repository import WorkScheduleRepository
 
 
 class ServiceLocator:
@@ -37,11 +42,17 @@ class ServiceLocator:
         self.remark_repo = RemarkRepository(self.db)
         self.vdr_repo = VDRRepository(self.db)
         self.mdr_repo = MDRRepository(self.db)
+        self.gamification_event_repo = GamificationEventRepository(self.db)
+        self.gamification_badge_repo = GamificationBadgeRepository(self.db)
+        self.notification_repo = NotificationRepository(self.db)
+        self.daily_quest_repo = DailyQuestRepository(self.db)
+        self.combo_achievement_repo = ComboAchievementRepository(self.db)
+        self.work_schedule_repo = WorkScheduleRepository(self.db)
 
         # Services
         self.auth_service = AuthService(
             self.user_repo,
-            secret_key=getattr(cfg, 'secret_key', 'iris-secret-key-change-in-production'),
+            secret_key=cfg.secret_key,
         )
         self.storage = StorageService(cfg.storage_root)
         self.revision_service = RevisionService(
@@ -54,6 +65,7 @@ class ServiceLocator:
         self.project_dashboard = ProjectDashboardService(
             self.project_repo, self.task_repo,
         )
+        self.time_calculation = TimeCalculationService(self.work_schedule_repo)
         self.document_workflow = DocumentWorkflowService(
             self.db,
             self.revision_service,

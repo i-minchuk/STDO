@@ -4,6 +4,7 @@ import { getPortfolio } from '../api/projects';
 import type { Project, PortfolioSummary } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import SPIIndicator from '../components/SPIIndicator';
+import DailyQuestWidget from '../components/DailyQuestWidget';
 import { FolderOpen, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 const MOCK_SUMMARY: PortfolioSummary = { total: 5, active: 3, at_risk: 1, completed: 1 };
@@ -46,6 +47,11 @@ export default function Dashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2"></div>
+        <DailyQuestWidget />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">

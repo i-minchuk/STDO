@@ -1,5 +1,6 @@
 import logging
 from io import BytesIO
+from datetime import date
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
@@ -11,6 +12,8 @@ from dto.revision import (
     CreateRevisionResponseDTO,
     RevisionDTO,
 )
+from api.gamification_api import award_gamification_with_badges
+from core.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +68,23 @@ def create_revision(
         revision.id
     )
 
+    # Award gamification points for creating a revision
+    award_gamification_with_badges(
+        locator=locator,
+        user_id=meta.created_by,
+        event_type="revision_created",
+        points=5,  # 5 points for creating a revision
+        project_id=doc.project_id,
+        comment=f"Создана ревизия {revision.revision_number} для документа {doc.code}",
+    )
+
+    # Update daily quest progress for creating documents
+    try:
+        locator.daily_quest_repo.update_quest_progress(meta.created_by, "create_documents", date.today())
+    except Exception as e:
+        # Don't fail the revision creation if quest update fails
+        logger.warning(f"Failed to update daily quest progress: {e}")
+
     return CreateRevisionResponseDTO(
         revision=RevisionDTO(
             id=revision.id,
@@ -105,5 +125,23 @@ def approve_revision(
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+    # Award gamification points for approving a revision
+    doc = locator.document_repo.get_by_id(revision.document_id)
+    award_gamification_with_badges(
+        locator=locator,
+        user_id=body.approved_by,
+        event_type="revision_approved",
+        points=8,  # Points for approving a revision
+        project_id=doc.project_id if doc else None,
+        comment=f"Одобрена ревизия {revision.revision_number} для документа {doc.code if doc else 'unknown'}",
+    )
+
+    # Update daily quest progress for reviewing documents
+    try:
+        locator.daily_quest_repo.update_quest_progress(body.approved_by, "review_documents", date.today())
+    except Exception as e:
+        # Don't fail the revision approval if quest update fails
+        logger.warning(f"Failed to update daily quest progress: {e}")
 
     return result

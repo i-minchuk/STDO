@@ -10,3 +10,29 @@ pythonpath = ["."]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
 ]
+
+[tool.black]
+line-length = 88
+exclude = '''
+/(
+  \.git
+ | \.venv
+ | build
+ | dist
+ | frontend
+ | storage
+ | __pycache__
+)/
+'''
+
+[tool.ruff]
+line-length = 88
+exclude = [
+  ".git",
+  ".venv",
+  "build",
+  "dist",
+  "frontend",
+  "storage",
+  "__pycache__",
+]

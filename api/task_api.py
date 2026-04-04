@@ -6,7 +6,8 @@ from typing import Optional
 from core.auth import get_current_user
 from core.service_locator import get_locator
 from models.user import User
-from models.enums import TaskStatus
+from models.enums import TaskStatus, TaskType
+from api.gamification_api import award_gamification_with_badges
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -58,6 +59,55 @@ def update_status(task_id: int, body: StatusUpdate, current_user: User = Depends
         new_status = TaskStatus(body.status)
     except ValueError:
         raise HTTPException(400, f"Invalid status: {body.status}")
+
+    # Check if task is being completed
+    if new_status == TaskStatus.COMPLETED and task.status != TaskStatus.COMPLETED:
+        # Determine if completed on time or early
+        today = date.today()
+        if task.end_date_planned and today < task.end_date_planned:
+            if task.task_type in (TaskType.REVIEW, TaskType.APPROVAL):
+                event_type = "review_completed_early"
+                points = 12  # Higher points for early document reviews
+                comment = f"Проверка документа завершена раньше срока: {task.name}"
+            else:
+                event_type = "task_completed_early"
+                points = 15
+                comment = f"Задача завершена раньше срока: {task.name}"
+        elif task.end_date_planned and today == task.end_date_planned:
+            if task.task_type in (TaskType.REVIEW, TaskType.APPROVAL):
+                event_type = "review_completed_on_time"
+                points = 8  # Points for timely document reviews
+                comment = f"Проверка документа завершена точно в срок: {task.name}"
+            else:
+                event_type = "task_completed_on_time"
+                points = 10
+                comment = f"Задача завершена точно в срок: {task.name}"
+        else:
+            if task.task_type in (TaskType.REVIEW, TaskType.APPROVAL):
+                event_type = "review_completed_late"
+                points = -8  # Penalty for late document reviews
+                comment = f"Проверка документа завершена с опозданием: {task.name}"
+            else:
+                event_type = "task_completed_late"
+                points = -5
+                comment = f"Задача завершена с опозданием: {task.name}"
+
+        # Award gamification points
+        award_gamification_with_badges(
+            locator=loc,
+            user_id=current_user.id,
+            event_type=event_type,
+            points=points,
+            project_id=task.project_id,
+            comment=comment,
+        )
+
+        # Update daily quest progress
+        try:
+            loc.daily_quest_repo.update_quest_progress(current_user.id, "complete_tasks", date.today())
+        except Exception as e:
+            # Don't fail the task update if quest update fails
+            print(f"Failed to update daily quest progress: {e}")
 
     loc.planned_task_repo.update_progress(
         task_id=task_id,

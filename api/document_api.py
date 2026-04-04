@@ -4,6 +4,7 @@ from typing import Optional, List
 from core.auth import get_current_user
 from core.service_locator import get_locator
 from models.user import User
+from dto.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -13,18 +14,44 @@ def list_documents(
     project_id: Optional[int] = Query(None),
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
+    limit: int = Query(20, gt=0, le=1000),
+    offset: int = Query(0, ge=0),
     current_user: User = Depends(get_current_user),
 ):
+    """List documents with pagination support."""
     loc = get_locator()
-    docs = loc.document_repo.get_all()
+
+    # Get all documents (with pagination at database level)
+    docs, total = loc.document_repo.get_all_paginated(limit=limit, offset=offset)
+
+    # Apply in-memory filters
     if project_id:
         docs = [d for d in docs if d.project_id == project_id]
+        # Recalculate total for filtered results
+        all_docs = loc.document_repo.get_all()
+        all_docs = [d for d in all_docs if d.project_id == project_id]
+        total = len(all_docs)
+
     if status:
         docs = [d for d in docs if d.status.value == status]
+        if project_id:
+            all_docs = [d for d in all_docs if d.status.value == status]
+        else:
+            all_docs = [d for d in loc.document_repo.get_all() if d.status.value == status]
+        total = len(all_docs)
+
     if search:
         q = search.lower()
         docs = [d for d in docs if q in (d.title or "").lower() or q in (d.code or "").lower()]
-    return [
+        all_filtered = loc.document_repo.get_all()
+        if project_id:
+            all_filtered = [d for d in all_filtered if d.project_id == project_id]
+        if status:
+            all_filtered = [d for d in all_filtered if d.status.value == status]
+        all_filtered = [d for d in all_filtered if q in (d.title or "").lower() or q in (d.code or "").lower()]
+        total = len(all_filtered)
+
+    items = [
         {
             "id": d.id,
             "code": d.code,
@@ -36,6 +63,8 @@ def list_documents(
         }
         for d in docs
     ]
+
+    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/{doc_id}")

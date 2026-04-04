@@ -1,6 +1,7 @@
 import logging
-from typing import Any, Optional
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Any, Generator, Optional
 
 import psycopg
 from psycopg import Connection
@@ -14,8 +15,7 @@ class Database:
     """PostgreSQL wrapper with connection pooling using psycopg 3."""
 
     def __init__(self, dsn: str, min_size: int = 2, max_size: int = 10) -> None:
-        """
-        Initialize database pool.
+        """Initialize database pool.
 
         Args:
             dsn: PostgreSQL connection string
@@ -26,6 +26,11 @@ class Database:
         self._min_size = min_size
         self._max_size = max_size
         self._pool: Optional[ConnectionPool] = None
+
+    @staticmethod
+    def _configure_connection(connection: Connection) -> None:
+        """Configure new psycopg connections for the pool."""
+        connection.row_factory = dict_row
 
     def connect(self) -> None:
         """Initialize connection pool."""
@@ -39,8 +44,8 @@ class Database:
                 self._dsn,
                 min_size=self._min_size,
                 max_size=self._max_size,
-                row_factory=dict_row,
-                autocommit=False,
+                configure=self._configure_connection,
+                kwargs={"autocommit": False},
             )
 
     def close(self) -> None:
@@ -58,23 +63,17 @@ class Database:
         return self._pool
 
     @contextmanager
-    def get_connection(self):
-        """Get a connection from pool (context manager)."""
-        conn = self.pool.getconn()
-        try:
+    def get_connection(self) -> Generator[Connection, None, None]:
+        """Get a connection from the pool."""
+        with self.pool.connection() as conn:
             yield conn
-        finally:
-            self.pool.putconn(conn)
 
     @contextmanager
-    def transaction(self):
-        """Get a transaction context (holds connection from pool)."""
-        conn = self.pool.getconn()
-        try:
+    def transaction(self) -> Generator[Connection, None, None]:
+        """Open a transaction on a pooled connection."""
+        with self.pool.connection() as conn:
             with conn.transaction():
                 yield conn
-        finally:
-            self.pool.putconn(conn)
 
     def fetch_one(self, query: str, params: tuple[Any, ...] = ()) -> dict | None:
         """Fetch one row from pool."""

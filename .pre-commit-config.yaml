@@ -1,0 +1,35 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.11.0
+    hooks:
+      - id: black
+        language_version: python3.12
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.0.282
+    hooks:
+      - id: ruff
+        args: ["check", "."]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: local
+    hooks:
+      - id: frontend-lint
+        name: Frontend lint
+        entry: npm --prefix frontend run lint
+        language: system
+        types: [javascript, javascript.jsx, javascriptreact, ts, tsx, json, md]
+      - id: frontend-build
+        name: Frontend build
+        entry: npm --prefix frontend run build
+        language: system
+        types: [javascript, javascript.jsx, javascriptreact, ts, tsx, json, md]
+        pass_filenames: false
+        always_run: true

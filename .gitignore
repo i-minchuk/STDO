@@ -21,6 +21,10 @@ env/
 .env
 .env.local
 
+# Node
+frontend/node_modules/
+frontend/dist/
+
 # Data & storage
 data/
 *.db

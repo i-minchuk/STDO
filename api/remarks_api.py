@@ -5,6 +5,7 @@ from typing import Optional
 from core.auth import require_role
 from core.service_locator import get_locator
 from models.user import User
+from api.gamification_api import award_gamification_with_badges
 
 router = APIRouter(prefix="/api/remarks", tags=["remarks"])
 
@@ -54,6 +55,29 @@ def create_remark(
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+    # Award gamification points for creating remarks
+    if body.source.lower() == "crs":
+        # Penalty for CRS remarks (unresolved issues returned)
+        award_gamification_with_badges(
+            locator=loc,
+            user_id=current_user.id,
+            event_type="crs_remark_created",
+            points=-5,
+            project_id=body.project_id,
+            comment=f"Создано замечание CRS: {body.text[:50]}...",
+        )
+    else:
+        # Regular remark creation (could be positive or neutral)
+        award_gamification_with_badges(
+            locator=loc,
+            user_id=current_user.id,
+            event_type="remark_created",
+            points=0,  # Neutral for regular remarks
+            project_id=body.project_id,
+            comment=f"Создано замечание: {body.text[:50]}...",
+        )
+
     return _remark_to_dict(remark)
 
 

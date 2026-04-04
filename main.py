@@ -9,20 +9,31 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from config import Config
 from core.service_locator import init_locator, get_locator
 
 logger = logging.getLogger("ДокПоток IRIS")
 
+# Rate limiter configuration: 100 requests per minute per IP
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    cfg = Config()  # ← теперь работает, т.к. у Config есть дефолты
     logging.basicConfig(
-        level=logging.INFO,
+        level=getattr(logging, cfg.log_level.upper(), logging.INFO),
         format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
     )
-    cfg = Config()  # ← теперь работает, т.к. у Config есть дефолты
+
+    # Run database migrations before initializing the app
+    from db.migrations_runner import run_migrations
+    run_migrations()
+
     init_locator(cfg)
     logger.info("ДокПоток IRIS v0.3.0 started")
     try:
@@ -38,6 +49,10 @@ app = FastAPI(
     description="Система учёта технической документации",
     lifespan=lifespan,
 )
+
+# Add rate limiter to FastAPI app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,6 +82,7 @@ from api.tender_api import router as tender_router
 from api.remarks_api import router as remarks_router
 from api.reports_api import router as reports_router
 from api.vdr_mdr_api import router as vdr_mdr_router
+from api.admin_api import router as admin_router
 
 app.include_router(auth_router)
 app.include_router(project_router)
@@ -83,6 +99,7 @@ app.include_router(tender_router)
 app.include_router(remarks_router)
 app.include_router(reports_router)
 app.include_router(vdr_mdr_router)
+app.include_router(admin_router)
 
 # --- Serve frontend build (Vite) ---
 

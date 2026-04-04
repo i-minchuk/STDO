@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Documents from './pages/Documents';
 import DocumentDetail from './pages/DocumentDetail';
+import DocumentCreate from './pages/DocumentCreate';
 import Tasks from './pages/Tasks';
 import Profile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
@@ -13,6 +14,7 @@ import AdminUsers from './pages/AdminUsers';
 import ImportExcel from './pages/ImportExcel';
 import Workload from './pages/Workload';
 import TenderAssess from './pages/TenderAssess';
+import Achievements from './pages/Achievements';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -38,11 +40,13 @@ export default function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="projects/:id" element={<ProjectDetail />} />
             <Route path="documents" element={<Documents />} />
+            <Route path="documents/new" element={<DocumentCreate />} />
             <Route path="documents/:id" element={<DocumentDetail />} />
             <Route path="tasks" element={<Tasks />} />
             <Route path="import" element={<ImportExcel />} />
             <Route path="workload" element={<Workload />} />
             <Route path="tender" element={<TenderAssess />} />
+            <Route path="achievements" element={<Achievements />} />
             <Route path="profile" element={<Profile />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />

@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: dms_db_dev
+    environment:
+      POSTGRES_USER: dms_user
+      POSTGRES_PASSWORD: dms_pass
+      POSTGRES_DB: dms
+    ports:
+      - "5432:5432"
+    volumes:
+      - dms_db_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dms_user -d dms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: dms_backend_dev
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    environment:
+      IRIS_DB_DSN: postgresql://dms_user:dms_pass@db:5432/dms
+      IRIS_STORAGE_ROOT: /app/storage
+      IRIS_SECRET_KEY: iris-secret-key-change-in-production
+      IRIS_LOG_LEVEL: DEBUG
+
+  frontend:
+    image: node:20-alpine
+    container_name: dms_frontend_dev
+    working_dir: /app/frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_API_BASE: http://localhost:8000
+
+  precommit:
+    image: node:20-bullseye-slim
+    container_name: dms_precommit_dev
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: bash -lc "apt-get update && apt-get install -y python3 python3-pip && python3 -m pip install --no-cache-dir -r requirements-dev.txt && python3 -m pre_commit run --all-files"
+
+volumes:
+  dms_db_dev_data:

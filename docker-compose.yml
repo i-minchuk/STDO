@@ -18,5 +18,20 @@ services:
       timeout: 5s
       retries: 10
 
+  backend:
+    build: .
+    container_name: dms_backend
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    environment:
+      IRIS_DB_DSN: postgresql://dms_user:dms_pass@db:5432/dms
+      IRIS_STORAGE_ROOT: /app/storage
+      IRIS_SECRET_KEY: iris-secret-key-change-in-production
+      IRIS_LOG_LEVEL: INFO
+    volumes:
+      - ./storage:/app/storage
+
 volumes:
   dms_db_data:

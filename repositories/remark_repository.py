@@ -31,6 +31,47 @@ class RemarkRepository:
             remark.responses = self.get_responses(remark.id)
         return remarks
 
+    def get_by_project_paginated(self, project_id: int, limit: int = 20, offset: int = 0, status: Optional[str] = None) -> tuple[List[Remark], int]:
+        """Get project remarks with pagination.
+
+        Returns:
+            Tuple of (remarks list, total count)
+        """
+        sql = """
+            SELECT r.id, r.project_id, r.document_id, r.revision_id,
+                   r.author_id, ua.full_name,
+                   r.assignee_id, ub.full_name,
+                   r.source, r.text, r.status, r.resolution_comment,
+                   r.created_at, r.resolved_at
+            FROM remarks r
+            LEFT JOIN users ua ON ua.id = r.author_id
+            LEFT JOIN users ub ON ub.id = r.assignee_id
+            WHERE r.project_id = %s
+        """
+        params: list = [project_id]
+        if status:
+            sql += " AND r.status = %s"
+            params.append(status)
+        sql += " ORDER BY r.created_at DESC LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+
+        rows = self._db.fetch_all(sql, tuple(params))
+        remarks = [Remark.from_row(r) for r in rows]
+        # Подтягиваем ответы для каждого замечания
+        for remark in remarks:
+            remark.responses = self.get_responses(remark.id)
+
+        # Get total count
+        count_sql = "SELECT count(*) AS cnt FROM remarks WHERE project_id = %s"
+        count_params = [project_id]
+        if status:
+            count_sql += " AND status = %s"
+            count_params.append(status)
+        total_row = self._db.fetch_one(count_sql, tuple(count_params))
+        total = int(total_row["cnt"]) if total_row else 0
+
+        return remarks, total
+
     def get_responses(self, remark_id: int) -> List[RemarkResponse]:
         rows = self._db.fetch_all(
             """SELECT rr.id, rr.remark_id, rr.author_id, u.full_name, rr.text, rr.created_at

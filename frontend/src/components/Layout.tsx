@@ -2,9 +2,10 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, FileText, ListTodo, Trophy, UserCircle,
-  Users, LogOut, Menu, X, BarChart3, Upload, ClipboardCheck
+  Users, LogOut, Menu, X, BarChart3, Upload, ClipboardCheck, Award
 } from 'lucide-react';
 import { useState } from 'react';
+import NotificationBell from './NotificationBell';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Администратор',
@@ -27,6 +28,7 @@ export default function Layout() {
     { to: '/import', icon: Upload, label: 'Импорт Excel' },
     { to: '/workload', icon: BarChart3, label: 'Загруженность' },
     { to: '/tender', icon: ClipboardCheck, label: 'Оценка тендера' },
+    { to: '/achievements', icon: Award, label: 'Достижения' },
     { to: '/leaderboard', icon: Trophy, label: 'Лидерборд' },
     { to: '/profile', icon: UserCircle, label: 'Мой кабинет' },
   ];
@@ -79,9 +81,16 @@ export default function Layout() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header with notifications */}
+        <header className="bg-white border-b border-gray-200 px-6 py-3 flex justify-end items-center">
+          <NotificationBell onNotificationClick={() => navigate('/profile')} />
+        </header>
+
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: dms_db_prod
+    environment:
+      POSTGRES_USER: dms_user
+      POSTGRES_PASSWORD: dms_pass
+      POSTGRES_DB: dms
+    ports:
+      - "5432:5432"
+    volumes:
+      - dms_db_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dms_user -d dms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: dms_backend_prod
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    environment:
+      IRIS_DB_DSN: postgresql://dms_user:dms_pass@db:5432/dms
+      IRIS_STORAGE_ROOT: /app/storage
+      IRIS_SECRET_KEY: iris-secret-key-change-in-production
+      IRIS_LOG_LEVEL: INFO
+    volumes:
+      - ./storage:/app/storage
+
+volumes:
+  dms_db_prod_data:

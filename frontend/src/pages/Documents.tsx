@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getDocuments } from '../api/documents';
 import type { Document } from '../types';
 import StatusBadge from '../components/StatusBadge';
-import { Search, FileText } from 'lucide-react';
+import { Search, FileText, Plus } from 'lucide-react';
 
 const MOCK_DOCS: Document[] = [
   { id: 1, code: 'НПЗ-КМ-001', title: 'Общий вид конструкций', project_id: 1, status: 'approved', doc_type: 'КМ', current_revision_id: 3 },
@@ -27,8 +27,17 @@ export default function Documents() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Документы</h1>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Документы</h1>
+          <button
+            type="button"
+            onClick={() => navigate('/documents/new')}
+            className="inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 text-sm font-medium"
+          >
+            <Plus size={16} /> Добавить документ
+          </button>
+        </div>
         <div className="relative">
           <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
           <input

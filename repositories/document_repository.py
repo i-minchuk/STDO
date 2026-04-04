@@ -34,6 +34,45 @@ class DocumentRepository:
         )
         return [self._row_to_model(r) for r in rows]
 
+    def get_all_paginated(self, limit: int = 20, offset: int = 0) -> tuple[Sequence[Document], int]:
+        """List all documents with pagination.
+
+        Returns:
+            Tuple of (documents list, total count)
+        """
+        rows = self._db.fetch_all(
+            f"SELECT {self._COLUMNS} FROM documents ORDER BY code LIMIT %s OFFSET %s",
+            (limit, offset),
+        )
+        documents = [self._row_to_model(r) for r in rows]
+
+        # Get total count
+        total_row = self._db.fetch_one("SELECT count(*) AS cnt FROM documents")
+        total = int(total_row["cnt"]) if total_row else 0
+
+        return documents, total
+
+    def get_by_project_id_paginated(self, project_id: int, limit: int = 20, offset: int = 0) -> tuple[Sequence[Document], int]:
+        """List documents by project with pagination.
+
+        Returns:
+            Tuple of (documents list, total count)
+        """
+        rows = self._db.fetch_all(
+            f"SELECT {self._COLUMNS} FROM documents WHERE project_id = %s ORDER BY code LIMIT %s OFFSET %s",
+            (project_id, limit, offset),
+        )
+        documents = [self._row_to_model(r) for r in rows]
+
+        # Get total count
+        total_row = self._db.fetch_one(
+            "SELECT count(*) AS cnt FROM documents WHERE project_id = %s",
+            (project_id,),
+        )
+        total = int(total_row["cnt"]) if total_row else 0
+
+        return documents, total
+
     def insert(
         self,
         project_id: int,

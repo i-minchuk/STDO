@@ -1,5 +1,6 @@
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Dict, Any
 from datetime import date
+import json
 
 from db.database import Database
 from models.project import Project
@@ -12,7 +13,9 @@ class ProjectRepository:
 
     _COLUMNS = """
         id, code, name, customer, status, manager_id,
-        start_date, end_date_planned, end_date_forecast, end_date_actual, created_at
+        start_date, end_date_planned, end_date_forecast, end_date_actual, created_at,
+        custom_fields, vdr_required, otk_required, crs_deadline_days,
+        logistics_delivery_weeks, logistics_complexity
     """
 
     def get_by_id(self, project_id: int) -> Optional[Project]:
@@ -28,6 +31,24 @@ class ProjectRepository:
         )
         return [self._row_to_model(r) for r in rows]
 
+    def list_all_paginated(self, limit: int = 20, offset: int = 0) -> tuple[Sequence[Project], int]:
+        """List all projects with pagination.
+
+        Returns:
+            Tuple of (projects list, total count)
+        """
+        rows = self._db.fetch_all(
+            f"SELECT {self._COLUMNS} FROM projects ORDER BY name LIMIT %s OFFSET %s",
+            (limit, offset),
+        )
+        projects = [self._row_to_model(r) for r in rows]
+
+        # Get total count
+        total_row = self._db.fetch_one("SELECT count(*) AS cnt FROM projects")
+        total = int(total_row["cnt"]) if total_row else 0
+
+        return projects, total
+
     def insert(
         self,
         code: str,
@@ -37,16 +58,26 @@ class ProjectRepository:
         manager_id: int | None,
         start_date: date | None,
         end_date_planned: date | None,
+        custom_fields: Optional[Dict[str, Any]] = None,
+        vdr_required: bool = False,
+        otk_required: bool = False,
+        crs_deadline_days: int = 3,
+        logistics_delivery_weeks: int = 2,
+        logistics_complexity: str = "normal",
     ) -> Project:
         row = self._db.fetch_one(
             f"""
             INSERT INTO projects (code, name, customer, status, manager_id,
-                                  start_date, end_date_planned)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                  start_date, end_date_planned, custom_fields,
+                                  vdr_required, otk_required, crs_deadline_days,
+                                  logistics_delivery_weeks, logistics_complexity)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING {self._COLUMNS}
             """,
             (code, name, customer, status.value, manager_id,
-             start_date, end_date_planned),
+             start_date, end_date_planned, json.dumps(custom_fields) if custom_fields else None,
+             vdr_required, otk_required, crs_deadline_days,
+             logistics_delivery_weeks, logistics_complexity),
         )
         return self._row_to_model(row)
 
@@ -87,4 +118,10 @@ class ProjectRepository:
             end_date_forecast=row.get("end_date_forecast"),
             end_date_actual=row.get("end_date_actual"),
             created_at=row["created_at"],
+            custom_fields=json.loads(row["custom_fields"]) if row.get("custom_fields") else None,
+            vdr_required=bool(row.get("vdr_required", False)),
+            otk_required=bool(row.get("otk_required", False)),
+            crs_deadline_days=int(row.get("crs_deadline_days", 3)),
+            logistics_delivery_weeks=int(row.get("logistics_delivery_weeks", 2)),
+            logistics_complexity=row.get("logistics_complexity", "normal"),
         )

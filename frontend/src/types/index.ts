@@ -106,6 +106,38 @@ export interface Badge {
   desc: string;
 }
 
+export interface DailyQuest {
+  id: number;
+  quest_type: string;
+  title: string;
+  description: string;
+  target_count: number;
+  current_count: number;
+  reward_points: number;
+  reward_xp: number;
+  is_completed: boolean;
+  completed_at: string | null;
+}
+
+export interface ComboAchievement {
+  id: number;
+  combo_type: string;
+  current_count: number;
+  max_count: number;
+  multiplier: number;
+  expires_at: string;
+  is_active: boolean;
+}
+
+export interface Notification {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 export interface ProjectHealth {
   project: { id: number; name: string; number: string };
   spi: number | null;

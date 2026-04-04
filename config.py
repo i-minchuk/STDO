@@ -1,48 +1,58 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 import os
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover
+    load_dotenv = None
+
+_dotenv_loaded = False
+
+
+def _load_dotenv_files() -> None:
+    global _dotenv_loaded
+    if _dotenv_loaded or load_dotenv is None:
+        return
+
+    root = Path(__file__).resolve().parent
+    for env_file in (root.parent / ".env", root.parent / ".env.local"):
+        if env_file.exists():
+            load_dotenv(env_file, override=False)
+    _dotenv_loaded = True
+
+
+def _env_or_default(name: str, default: str) -> str:
+    _load_dotenv_files()
+    return os.getenv(name, default)
 
 
 @dataclass
 class Config:
-    """
-    Конфигурация ДокПоток IRIS.
+    """Конфигурация ДокПоток IRIS."""
 
-    Варианты использования:
-    - Config()           — берёт всё из env или дефолтов.
-    - Config(db_dsn=..., storage_root=...) — явные параметры.
-    """
+    db_dsn: str = field(default_factory=lambda: _env_or_default(
+        "IRIS_DB_DSN",
+        "postgresql://postgres:Qwerty852@localhost:5432/iris",
+    ))
+    storage_root: str = field(default_factory=lambda: _env_or_default(
+        "IRIS_STORAGE_ROOT",
+        str(Path(__file__).parent / "storage"),
+    ))
+    secret_key: str = field(default_factory=lambda: _env_or_default(
+        "IRIS_SECRET_KEY",
+        "iris-secret-key-change-in-production",
+    ))
+    log_level: str = field(default_factory=lambda: _env_or_default(
+        "IRIS_LOG_LEVEL",
+        "INFO",
+    ))
 
-    db_dsn: str
-    storage_root: str
-
-    def __init__(
-        self,
-        db_dsn: str | None = None,
-        storage_root: str | None = None,
-    ) -> None:
-        # DSN к Postgres: env → явный параметр → дефолт
-        self.db_dsn = db_dsn or os.getenv(
-            "IRIS_DB_DSN",
-            # Поменяй на свои креды, если нужно:
-            "postgresql://postgres:Qwerty852@localhost:5432/iris",
-        )
-
-        # Каталог для файлов (загруженные документы, отчёты)
-        default_storage = os.path.join(os.path.dirname(__file__), "storage")
-        self.storage_root = storage_root or os.getenv(
-            "IRIS_STORAGE_ROOT",
-            default_storage,
-        )
-
-        os.makedirs(self.storage_root, exist_ok=True)
+    def __post_init__(self) -> None:
+        Path(self.storage_root).mkdir(parents=True, exist_ok=True)
 
 
 def load_config() -> Config:
-    return Config(
-        db_dsn=os.getenv(
-            "DB_DSN", "postgresql://dms_user:dms_pass@localhost:5432/dms"
-        ),
-        storage_root=os.getenv("STORAGE_ROOT", "./data/docs"),
-        log_level=os.getenv("LOG_LEVEL", "INFO"),
-    )
+    """Load configuration from environment variables and defaults."""
+    return Config()
