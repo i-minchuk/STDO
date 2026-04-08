@@ -1,97 +1,98 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import Optional, List
+from typing import Optional
 from core.auth import get_current_user
 from core.service_locator import get_locator
 from models.user import User
 from dto.pagination import PaginatedResponse
+from dto.document import DocumentDetailDTO, DocumentListDTO, RevisionShortDTO
+from models.enums import DocumentStatus
+from repositories.document_repository import DocumentRepository
+from repositories.revision_repository import RevisionRepository
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 
-@router.get("/")
+def get_document_repo() -> DocumentRepository:
+    return get_locator().document_repo
+
+
+def get_revision_repo() -> RevisionRepository:
+    return get_locator().revision_repo
+
+
+@router.get("/", response_model=PaginatedResponse[DocumentListDTO])
 def list_documents(
+    document_repo: DocumentRepository = Depends(get_document_repo),
     project_id: Optional[int] = Query(None),
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     limit: int = Query(20, gt=0, le=1000),
     offset: int = Query(0, ge=0),
     current_user: User = Depends(get_current_user),
-):
+) -> PaginatedResponse[DocumentListDTO]:
     """List documents with pagination support."""
-    loc = get_locator()
+    parsed_status = None
+    if status is not None:
+        try:
+            parsed_status = DocumentStatus(status)
+        except ValueError as exc:
+            raise HTTPException(400, f"Invalid document status: {status}") from exc
 
-    # Get all documents (with pagination at database level)
-    docs, total = loc.document_repo.get_all_paginated(limit=limit, offset=offset)
-
-    # Apply in-memory filters
-    if project_id:
-        docs = [d for d in docs if d.project_id == project_id]
-        # Recalculate total for filtered results
-        all_docs = loc.document_repo.get_all()
-        all_docs = [d for d in all_docs if d.project_id == project_id]
-        total = len(all_docs)
-
-    if status:
-        docs = [d for d in docs if d.status.value == status]
-        if project_id:
-            all_docs = [d for d in all_docs if d.status.value == status]
-        else:
-            all_docs = [d for d in loc.document_repo.get_all() if d.status.value == status]
-        total = len(all_docs)
-
-    if search:
-        q = search.lower()
-        docs = [d for d in docs if q in (d.title or "").lower() or q in (d.code or "").lower()]
-        all_filtered = loc.document_repo.get_all()
-        if project_id:
-            all_filtered = [d for d in all_filtered if d.project_id == project_id]
-        if status:
-            all_filtered = [d for d in all_filtered if d.status.value == status]
-        all_filtered = [d for d in all_filtered if q in (d.title or "").lower() or q in (d.code or "").lower()]
-        total = len(all_filtered)
+    docs, total = document_repo.search_paginated(
+        project_id=project_id,
+        status=parsed_status,
+        search=search,
+        limit=limit,
+        offset=offset,
+    )
 
     items = [
-        {
-            "id": d.id,
-            "code": d.code,
-            "title": d.title,
-            "project_id": d.project_id,
-            "status": d.status.value,
-            "discipline": d.discipline,
-            "current_revision_id": d.current_revision_id,
-        }
+        DocumentListDTO(
+            id=d.id,
+            code=d.code,
+            title=d.title,
+            project_id=d.project_id,
+            status=d.status,
+            discipline=d.discipline,
+            current_revision_id=d.current_revision_id,
+        )
         for d in docs
     ]
 
     return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
 
 
-@router.get("/{doc_id}")
-def get_document(doc_id: int, current_user: User = Depends(get_current_user)):
+@router.get("/{doc_id}", response_model=DocumentDetailDTO)
+def get_document(
+    doc_id: int,
+    document_repo: DocumentRepository = Depends(get_document_repo),
+    revision_repo: RevisionRepository = Depends(get_revision_repo),
+    current_user: User = Depends(get_current_user),
+) -> DocumentDetailDTO:
     loc = get_locator()
-    doc = loc.document_repo.get_by_id(doc_id)
+    doc = document_repo.get_by_id(doc_id)
     if not doc:
         raise HTTPException(404, "Document not found")
-    revisions = loc.revision_repo.get_revisions_for_document(doc_id)
-    return {
-        "id": doc.id,
-        "code": doc.code,
-        "title": doc.title,
-        "project_id": doc.project_id,
-        "status": doc.status.value,
-        "discipline": doc.discipline,
-        "current_revision_id": doc.current_revision_id,
-        "revisions": [
-            {
-                "id": r.id,
-                "revision_index": r.revision_index,
-                "revision_letter": r.revision_letter,
-                "revision_number": r.revision_number,
-                "status": r.status.value,
-                "created_at": str(r.created_at) if r.created_at else None,
-                "file_path": r.file_path,
-            }
+    revisions = revision_repo.get_revisions_for_document(doc_id)
+    return DocumentDetailDTO(
+        id=doc.id,
+        code=doc.code,
+        title=doc.title,
+        project_id=doc.project_id,
+        status=doc.status,
+        discipline=doc.discipline,
+        current_revision_id=doc.current_revision_id,
+        revisions=[
+            RevisionShortDTO(
+                id=r.id,
+                revision_index=r.revision_index,
+                revision_letter=r.revision_letter,
+                revision_number=r.revision_number,
+                status=r.status,
+                created_at=r.created_at,
+                file_path=r.file_path,
+            )
             for r in revisions
         ],
-    }
+    )

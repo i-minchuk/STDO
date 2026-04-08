@@ -83,6 +83,7 @@ from api.remarks_api import router as remarks_router
 from api.reports_api import router as reports_router
 from api.vdr_mdr_api import router as vdr_mdr_router
 from api.admin_api import router as admin_router
+from api.heatmap_api import router as heatmap_router
 
 app.include_router(auth_router)
 app.include_router(project_router)
@@ -100,6 +101,7 @@ app.include_router(remarks_router)
 app.include_router(reports_router)
 app.include_router(vdr_mdr_router)
 app.include_router(admin_router)
+app.include_router(heatmap_router)
 
 # --- Serve frontend build (Vite) ---
 

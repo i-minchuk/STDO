@@ -109,7 +109,7 @@ POST /api/admin/work-schedules/calculate/end-date?start_date=2026-04-06&work_day
 {
   "start_date": "2026-04-06",  // Понедельник
   "work_days_duration": 5,
-  "end_date": "2026-04-10",    // Пятница (пропущены выходные)
+  "end_date": "2026-04-13",    // Следующий понедельник: стартовая дата считается как день 0
   "actual_work_days": 5
 }
 ```
@@ -210,6 +210,8 @@ POST   /api/admin/work-schedules/calculate/end-date           — Дата ок�
 ### Сервисы
 - `WorkScheduleRepository`: CRUD операции
 - `TimeCalculationService`: Конверсия между часами и днями, расчет дат
+  - Неполные рабочие дни при конверсии часов в дни округляются вверх
+  - `0` рабочих дней не сдвигают стартовую дату
 
 ## Будущие улучшения
 

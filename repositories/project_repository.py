@@ -5,12 +5,10 @@ import json
 from db.database import Database
 from models.project import Project
 from models.enums import ProjectStatus
+from repositories.base_repository import BaseRepository
 
 
-class ProjectRepository:
-    def __init__(self, db: Database) -> None:
-        self._db = db
-
+class ProjectRepository(BaseRepository[Project]):
     _COLUMNS = """
         id, code, name, customer, status, manager_id,
         start_date, end_date_planned, end_date_forecast, end_date_actual, created_at,
@@ -18,18 +16,11 @@ class ProjectRepository:
         logistics_delivery_weeks, logistics_complexity
     """
 
-    def get_by_id(self, project_id: int) -> Optional[Project]:
-        row = self._db.fetch_one(
-            f"SELECT {self._COLUMNS} FROM projects WHERE id = %s",
-            (project_id,),
-        )
-        return self._row_to_model(row) if row else None
+    def __init__(self, db: Database) -> None:
+        super().__init__(db, Project, "projects", self._COLUMNS)
 
     def list_all(self) -> Sequence[Project]:
-        rows = self._db.fetch_all(
-            f"SELECT {self._COLUMNS} FROM projects ORDER BY name"
-        )
-        return [self._row_to_model(r) for r in rows]
+        return self.list_all(order_by="name")
 
     def list_all_paginated(self, limit: int = 20, offset: int = 0) -> tuple[Sequence[Project], int]:
         """List all projects with pagination.
@@ -37,17 +28,7 @@ class ProjectRepository:
         Returns:
             Tuple of (projects list, total count)
         """
-        rows = self._db.fetch_all(
-            f"SELECT {self._COLUMNS} FROM projects ORDER BY name LIMIT %s OFFSET %s",
-            (limit, offset),
-        )
-        projects = [self._row_to_model(r) for r in rows]
-
-        # Get total count
-        total_row = self._db.fetch_one("SELECT count(*) AS cnt FROM projects")
-        total = int(total_row["cnt"]) if total_row else 0
-
-        return projects, total
+        return self._get_paginated(order_by="name", limit=limit, offset=offset)
 
     def insert(
         self,
@@ -67,12 +48,12 @@ class ProjectRepository:
     ) -> Project:
         row = self._db.fetch_one(
             f"""
-            INSERT INTO projects (code, name, customer, status, manager_id,
+            INSERT INTO {self._table_name} (code, name, customer, status, manager_id,
                                   start_date, end_date_planned, custom_fields,
                                   vdr_required, otk_required, crs_deadline_days,
                                   logistics_delivery_weeks, logistics_complexity)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING {self._COLUMNS}
+            RETURNING {self._columns}
             """,
             (code, name, customer, status.value, manager_id,
              start_date, end_date_planned, json.dumps(custom_fields) if custom_fields else None,
@@ -88,8 +69,8 @@ class ProjectRepository:
         end_date_actual: date | None = None,
     ) -> None:
         self._db.execute(
-            """
-            UPDATE projects
+            f"""
+            UPDATE {self._table_name}
             SET status = %s,
                 end_date_actual = COALESCE(%s, end_date_actual)
             WHERE id = %s
@@ -99,29 +80,14 @@ class ProjectRepository:
 
     def count_by_status(self, status: ProjectStatus) -> int:
         row = self._db.fetch_one(
-            "SELECT count(*) AS cnt FROM projects WHERE status = %s",
+            f"SELECT count(*) AS cnt FROM {self._table_name} WHERE status = %s",
             (status.value,),
         )
         return int(row["cnt"]) if row else 0
 
-    @staticmethod
-    def _row_to_model(row: dict) -> Project:
-        return Project(
-            id=row["id"],
-            code=row["code"],
-            name=row["name"],
-            customer=row.get("customer"),
-            status=ProjectStatus(row["status"]),
-            manager_id=row.get("manager_id"),
-            start_date=row.get("start_date"),
-            end_date_planned=row.get("end_date_planned"),
-            end_date_forecast=row.get("end_date_forecast"),
-            end_date_actual=row.get("end_date_actual"),
-            created_at=row["created_at"],
-            custom_fields=json.loads(row["custom_fields"]) if row.get("custom_fields") else None,
-            vdr_required=bool(row.get("vdr_required", False)),
-            otk_required=bool(row.get("otk_required", False)),
-            crs_deadline_days=int(row.get("crs_deadline_days", 3)),
-            logistics_delivery_weeks=int(row.get("logistics_delivery_weeks", 2)),
-            logistics_complexity=row.get("logistics_complexity", "normal"),
-        )
+    def _row_to_model(self, row: dict) -> Project:
+        # Override to handle ProjectStatus Enum and JSON custom_fields conversion
+        row["status"] = ProjectStatus(row["status"])
+        if row.get("custom_fields"):
+            row["custom_fields"] = json.loads(row["custom_fields"])
+        return super()._row_to_model(row)

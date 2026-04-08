@@ -106,34 +106,56 @@ class WorkScheduleRepository:
         return self._row_to_model(row) if row else None
 
     def count_work_days(self, start_date: date, end_date: date, schedule: Optional[WorkSchedule] = None) -> int:
-        """Count work days between two dates."""
+        """Count work days between two dates inclusively.
+
+        Returns a negative value when end_date is earlier than start_date.
+        """
         if schedule is None:
             schedule = self.get_default_schedule()
         if schedule is None:
             # Fallback: assume 5-day week (Mon-Fri)
             schedule = WorkSchedule(0, "default", [0, 1, 2, 3, 4], 8.5, 17.5, 1.0)
 
+        if start_date == end_date:
+            return 1 if schedule.is_work_day(start_date.weekday()) else 0
+
+        sign = 1
+        range_start = start_date
+        range_end = end_date
+        if end_date < start_date:
+            sign = -1
+            range_start = end_date
+            range_end = start_date
+
         count = 0
-        current = start_date
-        while current <= end_date:
+        current = range_start
+        while current <= range_end:
             if schedule.is_work_day(current.weekday()):
                 count += 1
             current += timedelta(days=1)
 
-        return count
+        return count * sign
 
     def add_work_days(self, start_date: date, days_count: int, schedule: Optional[WorkSchedule] = None) -> date:
-        """Add N work days to a date."""
+        """Add N work days to a date.
+
+        The start date is treated as day zero.
+        """
         if schedule is None:
             schedule = self.get_default_schedule()
         if schedule is None:
             schedule = WorkSchedule(0, "default", [0, 1, 2, 3, 4], 8.5, 17.5, 1.0)
 
+        if days_count == 0:
+            return start_date
+
         current = start_date
         added = 0
+        step = 1 if days_count > 0 else -1
+        target = abs(days_count)
 
-        while added < days_count:
-            current += timedelta(days=1)
+        while added < target:
+            current += timedelta(days=step)
             if schedule.is_work_day(current.weekday()):
                 added += 1
 

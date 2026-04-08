@@ -61,86 +61,91 @@ class DocumentWorkflowService:
         approval_duration_days: int = 1,
         major: bool = False,
     ) -> DocumentRevision:
-        revision = self._revision_service.create_revision(
-            document_id=document_id,
-            filename=filename,
-            file_content=file_content,
-            change_log=change_log,
-            created_by=created_by,
-            major=major,
-        )
-
-        document = self._documents.get_by_id(document_id)
-        if document is None:
-            raise ValueError(f"Document {document_id} not found")
-
-        project = self._projects.get_by_id(document.project_id)
-        if project is None:
-            raise ValueError(f"Project {document.project_id} not found")
-
-        today = date.today()
-        prev_task = None
-
-        # Create review task if reviewer specified
-        if reviewer_id is not None:
-            review_task = self._tasks.insert(
-                project_id=project.id,
-                project_code=project.code,
-                project_name=project.name,
-                document_id=document.id,
-                document_code=document.code,
-                revision_id=revision.id,
-                revision_index=revision.revision_index,
-                name=f"Review {document.code} {revision.revision_index}",
-                task_type=TaskType.REVIEW,
-                assigned_to=reviewer_id,
-                owner_name=None,
-                duration_days_planned=review_duration_days,
-                work_hours_planned=float(review_duration_days * 8),
-                start_date_planned=today,
-                end_date_planned=today + timedelta(days=review_duration_days),
-                status=TaskStatus.NOT_STARTED,
-            )
-            prev_task = review_task
-
-        # Create approval task if approver specified
-        if approver_id is not None:
-            approval_start = today
-            if prev_task is not None:
-                approval_start = prev_task.end_date_planned or today
-
-            approval_task = self._tasks.insert(
-                project_id=project.id,
-                project_code=project.code,
-                project_name=project.name,
-                document_id=document.id,
-                document_code=document.code,
-                revision_id=revision.id,
-                revision_index=revision.revision_index,
-                name=f"Approve {document.code} {revision.revision_index}",
-                task_type=TaskType.APPROVAL,
-                assigned_to=approver_id,
-                owner_name=None,
-                duration_days_planned=approval_duration_days,
-                work_hours_planned=float(approval_duration_days * 8),
-                start_date_planned=approval_start,
-                end_date_planned=approval_start + timedelta(days=approval_duration_days),
-                status=TaskStatus.NOT_STARTED,
+        with self._db.transaction():
+            revision = self._revision_service.create_revision(
+                document_id=document_id,
+                filename=filename,
+                file_content=file_content,
+                change_log=change_log,
+                created_by=created_by,
+                major=major,
             )
 
-            # Link review -> approval with FS dependency
-            if prev_task is not None:
-                self._deps.insert(
-                    project_id=project.id,
-                    predecessor_task_id=prev_task.id,
-                    successor_task_id=approval_task.id,
+            document = self._documents.get_by_id(document_id)
+            if document is None:
+                raise ValueError(f"Document {document_id} not found")
+
+            project = self._projects.get_by_id(document.project_id)
+            if project is None:
+                raise ValueError(f"Project {document.project_id} not found")
+
+            today = date.today()
+            
+            review_task = None
+            if reviewer_id is not None:
+                review_task = self._create_workflow_task(
+                    project=project,
+                    document=document,
+                    revision=revision,
+                    task_type=TaskType.REVIEW,
+                    assigned_to=reviewer_id,
+                    duration_days=review_duration_days,
+                    start_date=today,
                 )
 
-        logger.info(
-            "Workflow created for revision %d (doc=%d, reviewer=%s, approver=%s)",
-            revision.id, document_id, reviewer_id, approver_id,
+            if approver_id is not None:
+                approval_start = review_task.end_date_planned if review_task else today
+                approval_task = self._create_workflow_task(
+                    project=project,
+                    document=document,
+                    revision=revision,
+                    task_type=TaskType.APPROVAL,
+                    assigned_to=approver_id,
+                    duration_days=approval_duration_days,
+                    start_date=approval_start,
+                )
+
+                if review_task:
+                    self._deps.insert(
+                        project_id=project.id,
+                        predecessor_task_id=review_task.id,
+                        successor_task_id=approval_task.id,
+                    )
+
+            logger.info(
+                "Workflow created for revision %d (doc=%d, reviewer=%s, approver=%s)",
+                revision.id, document_id, reviewer_id, approver_id,
+            )
+            return revision
+
+    def _create_workflow_task(
+        self,
+        project: object,
+        document: object,
+        revision: DocumentRevision,
+        task_type: TaskType,
+        assigned_to: int,
+        duration_days: int,
+        start_date: date,
+    ):
+        return self._tasks.insert(
+            project_id=project.id,
+            project_code=project.code,
+            project_name=project.name,
+            document_id=document.id,
+            document_code=document.code,
+            revision_id=revision.id,
+            revision_index=revision.revision_index,
+            name=f"{task_type.value.capitalize()} {document.code} {revision.revision_index}",
+            task_type=task_type,
+            assigned_to=assigned_to,
+            owner_name=None,
+            duration_days_planned=duration_days,
+            work_hours_planned=float(duration_days * 8),
+            start_date_planned=start_date,
+            end_date_planned=start_date + timedelta(days=duration_days),
+            status=TaskStatus.NOT_STARTED,
         )
-        return revision
 
     def approve_revision_with_workflow_dto(
         self,

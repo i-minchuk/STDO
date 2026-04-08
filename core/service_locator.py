@@ -15,12 +15,16 @@ from services.document_workflow_service import DocumentWorkflowService
 from services.cpm_scheduler_service import CPMSchedulerService
 from services.project_dashboard_service import ProjectDashboardService
 from services.time_calculation_service import TimeCalculationService
+from services.heatmap_service import HeatmapService
 from repositories.gamification_event_repository import GamificationEventRepository
 from repositories.gamification_badge_repository import GamificationBadgeRepository
 from repositories.notification_repository import NotificationRepository
 from repositories.daily_quest_repository import DailyQuestRepository
 from repositories.combo_achievement_repository import ComboAchievementRepository
 from repositories.work_schedule_repository import WorkScheduleRepository
+from repositories.user_repository import UserRepository
+from repositories.time_log_repository import TimeLogRepository
+from services.auth_service import AuthService
 
 
 class ServiceLocator:
@@ -48,6 +52,7 @@ class ServiceLocator:
         self.daily_quest_repo = DailyQuestRepository(self.db)
         self.combo_achievement_repo = ComboAchievementRepository(self.db)
         self.work_schedule_repo = WorkScheduleRepository(self.db)
+        self.time_log_repo = TimeLogRepository(self.db)
 
         # Services
         self.auth_service = AuthService(
@@ -66,6 +71,7 @@ class ServiceLocator:
             self.project_repo, self.task_repo,
         )
         self.time_calculation = TimeCalculationService(self.work_schedule_repo)
+        self.heatmap_service = HeatmapService(self.time_log_repo)
         self.document_workflow = DocumentWorkflowService(
             self.db,
             self.revision_service,

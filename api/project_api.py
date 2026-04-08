@@ -1,9 +1,40 @@
-from api.gamification_api import award_gamification_with_badges
+from __future__ import annotations
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Any
+from datetime import date, datetime, timedelta
+
+from core.auth import get_current_user
+from core.service_locator import get_locator, ServiceLocator
+from models.user import User
+from models.enums import ProjectStatus, TaskType, TaskStatus
+from models.project import Project
 from dto.common import ProjectShortDTO
 from dto.portfolio_today import PortfolioTodayOverviewDTO
 from dto.pagination import PaginatedResponse
+from api.gamification_api import award_gamification_with_badges # This is a temporary import, will be refactored later
+from repositories.project_repository import ProjectRepository
+from repositories.planned_task_repository import PlannedTaskRepository
+from services.cpm_scheduler_service import CPMSchedulerService
+from services.project_dashboard_service import ProjectDashboardService
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
+
+
+def get_project_repo() -> ProjectRepository:
+    return get_locator().project_repo
+
+
+def get_planned_task_repo() -> PlannedTaskRepository:
+    return get_locator().planned_task_repo
+
+
+def get_cpm_scheduler_service() -> CPMSchedulerService:
+    return get_locator().cpm_scheduler
+
+
+def get_project_dashboard_service() -> ProjectDashboardService:
+    return get_locator().project_dashboard
 
 
 class CreateProjectFromTenderRequest(BaseModel):
@@ -22,6 +53,10 @@ class CreateProjectFromTenderRequest(BaseModel):
 def create_project_from_tender(
     body: CreateProjectFromTenderRequest,
     current_user: User = Depends(get_current_user),
+    project_repo: ProjectRepository = Depends(get_project_repo),
+    planned_task_repo: PlannedTaskRepository = Depends(get_planned_task_repo),
+    cpm_scheduler: CPMSchedulerService = Depends(get_cpm_scheduler_service),
+    project_dashboard: ProjectDashboardService = Depends(get_project_dashboard_service),
     locator: ServiceLocator = Depends(get_locator),
 ):
     """
@@ -31,12 +66,12 @@ def create_project_from_tender(
     # Генерируем код проекта
     today = date.today()
     year = today.year
-    existing_codes = [p.code for p in locator.project_repo.list_all() if p.code.startswith(f"PRJ-{year}")]
+    existing_codes = [p.code for p in project_repo.list_all() if p.code.startswith(f"PRJ-{year}")]
     next_num = len(existing_codes) + 1
     project_code = f"PRJ-{year}-{next_num:03d}"
 
     # Создаём проект
-    project = locator.project_repo.insert(
+    project = project_repo.insert(
         code=project_code,
         name=body.tender_name,
         customer=body.customer,
@@ -53,7 +88,7 @@ def create_project_from_tender(
     )
 
     # Планируем задачи
-    tasks_created = _plan_project_tasks(locator, project, body)
+    tasks_created = _plan_project_tasks(planned_task_repo, cpm_scheduler, project_dashboard, locator, project, body)
 
     # Начисляем геймификацию за принятие тендера
     _award_gamification(locator, current_user.id, "tender_accepted", points=50, project_id=project.id, comment=f"Принят тендер: {body.tender_name}")
@@ -70,7 +105,14 @@ def create_project_from_tender(
     }
 
 
-def _plan_project_tasks(locator: ServiceLocator, project, body: CreateProjectFromTenderRequest) -> int:
+def _plan_project_tasks(
+    planned_task_repo: PlannedTaskRepository,
+    cpm_scheduler: CPMSchedulerService,
+    project_dashboard: ProjectDashboardService,
+    locator: ServiceLocator,
+    project: Project,
+    body: CreateProjectFromTenderRequest
+) -> int:
     """Планирует задачи для проекта на основе тендера."""
     tasks = []
     start_date = project.start_date
@@ -151,7 +193,7 @@ def _plan_project_tasks(locator: ServiceLocator, project, body: CreateProjectFro
     current_start = start_date
     for task_data in tasks:
         end_date = current_start + timedelta(days=task_data["duration_days"] - 1)
-        locator.planned_task_repo.insert(
+        planned_task_repo.insert(
             project_id=project.id,
             project_code=project.code,
             project_name=project.name,
@@ -173,8 +215,8 @@ def _plan_project_tasks(locator: ServiceLocator, project, body: CreateProjectFro
         current_start = end_date + timedelta(days=1)  # Следующая задача на следующий день
 
     # Пересчитываем CPM
-    locator.cpm_scheduler.recalculate_project_schedule(project.id)
-    locator.project_dashboard.recalculate_project_metrics(project.id)
+    cpm_scheduler.recalculate_project_schedule(project.id)
+    project_dashboard.recalculate_project_metrics(project.id)
 
     return task_count
 
@@ -195,10 +237,11 @@ def _award_gamification(locator: ServiceLocator, user_id: int, event_type: str, 
 def list_projects(
     limit: int = Query(20, gt=0, le=1000),
     offset: int = Query(0, ge=0),
-    locator: ServiceLocator = Depends(get_locator)
+    project_repo: ProjectRepository = Depends(get_project_repo),
+    current_user: User = Depends(get_current_user),
 ):
     """List projects with pagination support."""
-    projects, total = locator.project_repo.list_all_paginated(limit=limit, offset=offset)
+    projects, total = project_repo.list_all_paginated(limit=limit, offset=offset)
     items = [
         ProjectShortDTO(
             id=p.id, code=p.code, name=p.name, status=p.status.value,
@@ -209,6 +252,9 @@ def list_projects(
 
 
 @router.get("/portfolio/today", response_model=PortfolioTodayOverviewDTO)
-def get_portfolio_today(locator: ServiceLocator = Depends(get_locator)):
+def get_portfolio_today(
+    project_dashboard: ProjectDashboardService = Depends(get_project_dashboard_service),
+    current_user: User = Depends(get_current_user),
+):
     today = date.today()
-    return locator.project_dashboard.get_portfolio_today_overview_dto(today)
+    return project_dashboard.get_portfolio_today_overview_dto(today)

@@ -15,6 +15,10 @@ time_calc = loc.time_calculation
 # Сколько рабочих дней в 40 часах?
 work_days = time_calc.calculate_work_days_from_hours(40)
 # Result: 5 (при 8 ч/день)
+#
+# Неполный день округляется вверх:
+partial = time_calc.calculate_work_days_from_hours(9)
+# Result: 2
 ```
 
 ### 2. Конверсия дней в часы
@@ -30,7 +34,7 @@ from datetime import date
 
 start = date(2026, 4, 6)  # Понедельник
 end = time_calc.add_work_days_to_date(start, 5)
-# Result: date(2026, 4, 10) - Пятница (выходные пропущены)
+# Result: date(2026, 4, 13) - Следующий понедельник (стартовая дата считается как день 0)
 ```
 
 ### 4. Подсчет рабочих дней между датами
@@ -49,7 +53,7 @@ from datetime import date
 
 start = date(2026, 4, 6)
 end = time_calc.calculate_end_date(start, 10)
-# Result: date(2026, 4, 17) - 10 рабочих дней
+# Result: date(2026, 4, 20) - 10 рабочих дней (стартовая дата считается как день 0)
 ```
 
 ### 6. Проверка рабочего дня
@@ -114,11 +118,15 @@ duration_days_planned = 5  # 5 рабочих дней
 2. **Выходные всегда пропускаются**
    - При расчете дат автоматически прибавляются выходные
 
-3. **Перерыв на обед учитывается при расчете часов**
-   - При конверсии дней в часы вычитается время обеда
+3. **Перерыв на обед учитывается через `work_hours_per_day`**
+   - Конверсия дней в часы использует уже рассчитанные рабочие часы графика
 
-4. **Расчеты работают только для будущих дат**
-   - Не рекомендуется использовать для исторических данных
+4. **Нулевая длительность поддерживается**
+   - `0` часов = `0` рабочих дней
+   - `0` рабочих дней не сдвигают дату начала
+
+5. **Расчеты можно выполнять для любых дат**
+   - Сервис не ограничивает использование только будущими датами
 
 ## Интеграция с CPM
 
@@ -145,7 +153,9 @@ def time_calc():
     return loc.time_calculation
 
 def test_hours_to_days(time_calc):
+    assert time_calc.calculate_work_days_from_hours(0) == 0
     assert time_calc.calculate_work_days_from_hours(8) == 1
+    assert time_calc.calculate_work_days_from_hours(9) == 2
     assert time_calc.calculate_work_days_from_hours(40) == 5
 
 def test_work_day_skip_weekends(time_calc):
