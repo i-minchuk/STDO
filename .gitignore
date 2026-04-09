@@ -1,5 +1,8 @@
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
 *.egg-info/
 dist/
 build/
@@ -22,6 +25,7 @@ env/
 .env.local
 
 # Node
+node_modules/
 frontend/node_modules/
 frontend/dist/
 
@@ -33,6 +37,8 @@ data/
 # OS
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
 
 # Coverage
 htmlcov/
@@ -41,3 +47,13 @@ htmlcov/
 .claude/
 .mcp.json
 CLAUDE.md
+
+# Local data / storage
+storage/
+
+# Local config
+.env
+.env.local
+
+# Test cache
+.pytest_cache/
