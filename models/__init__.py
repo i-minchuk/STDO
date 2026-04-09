@@ -13,6 +13,7 @@ from models.planned_task import PlannedTask
 from models.task_dependency import TaskDependency
 from models.time_log import TimeLog
 from models.engineer_metric import EngineerMetric
+from models.tender import Tender, TenderDocument
 
 __all__ = [
     "DocumentStatus",
@@ -28,4 +29,6 @@ __all__ = [
     "TaskDependency",
     "TimeLog",
     "EngineerMetric",
+    "Tender",
+    "TenderDocument",
 ]

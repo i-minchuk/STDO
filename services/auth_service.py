@@ -10,7 +10,7 @@ from repositories.user_repository import UserRepository
 
 
 class AuthService:
-    def __init__(self, user_repo: UserRepository, secret_key: str = "stdo-secret-key-change-in-production",
+    def __init__(self, user_repo: UserRepository, secret_key: str = "iris-secret-key-change-in-production",
                  algorithm: str = "HS256"):
         self._user_repo = user_repo
         self._secret = secret_key

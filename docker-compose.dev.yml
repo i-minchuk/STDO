@@ -39,7 +39,7 @@ services:
     container_name: dms_frontend_dev
     working_dir: /app/frontend
     ports:
-      - "5173:5173"
+      - "5432:5432"
     volumes:
       - ./frontend:/app/frontend
       - /app/frontend/node_modules

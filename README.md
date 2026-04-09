@@ -129,7 +129,8 @@ For a production-like stack, use the production compose file:
 docker compose -f docker-compose.prod.yml up --build
 ```
 
-For local development with live frontend reload, use the dev compose file and run the frontend from the browser at http://localhost:5173:
+For local development with live frontend reload, use the dev compose file and run the frontend from the browser at http://localhost:5432
+:
 
 ```bash
 docker compose -f docker-compose.dev.yml up --build

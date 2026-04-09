@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from pathlib import Path
 import os
@@ -17,7 +18,7 @@ def _load_dotenv_files() -> None:
         return
 
     root = Path(__file__).resolve().parent
-    for env_file in (root.parent / ".env", root.parent / ".env.local"):
+    for env_file in (root / ".env", root / ".env.local"):
         if env_file.exists():
             load_dotenv(env_file, override=False)
     _dotenv_loaded = True
@@ -33,19 +34,19 @@ class Config:
     """Конфигурация ДокПоток IRIS."""
 
     db_dsn: str = field(default_factory=lambda: _env_or_default(
-        "IRIS_DB_DSN",
+        "DB_DSN",
         "postgresql://postgres:Qwerty852@localhost:5432/iris",
     ))
     storage_root: str = field(default_factory=lambda: _env_or_default(
-        "IRIS_STORAGE_ROOT",
+        "STORAGE_ROOT",
         str(Path(__file__).parent / "storage"),
     ))
     secret_key: str = field(default_factory=lambda: _env_or_default(
-        "IRIS_SECRET_KEY",
+        "SECRET_KEY",
         "iris-secret-key-change-in-production",
     ))
     log_level: str = field(default_factory=lambda: _env_or_default(
-        "IRIS_LOG_LEVEL",
+        "LOG_LEVEL",
         "INFO",
     ))
 
@@ -54,5 +55,4 @@ class Config:
 
 
 def load_config() -> Config:
-    """Load configuration from environment variables and defaults."""
     return Config()

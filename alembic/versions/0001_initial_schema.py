@@ -2,7 +2,7 @@
 
 Revision ID: 0001
 Revises:
-Create Date: 2026-04-03 00:00:00.000000
+Create Date: 2026-04-09 00:00:00.000000
 
 Consolidates 000_initial, 001_add_planning, 002_add_users, and 003_new_modules.sql
 """
@@ -437,15 +437,16 @@ def upgrade() -> None:
 
     # Seed admin user
     op.execute("""
-        INSERT INTO users (username, email, password_hash, full_name, role)
-        VALUES (
-            'admin',
-            'admin@stdo.local',
-            '$2b$12$LJ3m4ys3Lk0TSwHjWz8wOeFlQSPaGZ5PZFV8MDB97vM5IjMEIJWe',
-            'Администратор',
-            'admin'
-        ) ON CONFLICT (username) DO NOTHING
-    """)
+            INSERT INTO users (username, login, email, password_hash, full_name, role)
+            VALUES (
+                'admin',
+                'admin',
+                'admin@stdo.local',
+                '$2b$12$LJ3m4ys3Lk0TSwHjWz8wOeFlQSPaGZ5PZFV8MDB97vM5IjMEIJWe',
+                'Администратор',
+                'admin'
+            ) ON CONFLICT (username) DO NOTHING
+        """)
 
 
 def downgrade() -> None:

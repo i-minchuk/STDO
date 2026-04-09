@@ -24,6 +24,7 @@ from repositories.combo_achievement_repository import ComboAchievementRepository
 from repositories.work_schedule_repository import WorkScheduleRepository
 from repositories.user_repository import UserRepository
 from repositories.time_log_repository import TimeLogRepository
+from repositories.tender_repository import TenderRepository
 from services.auth_service import AuthService
 
 
@@ -53,6 +54,7 @@ class ServiceLocator:
         self.combo_achievement_repo = ComboAchievementRepository(self.db)
         self.work_schedule_repo = WorkScheduleRepository(self.db)
         self.time_log_repo = TimeLogRepository(self.db)
+        self.tender_repo = TenderRepository(self.db)
 
         # Services
         self.auth_service = AuthService(
