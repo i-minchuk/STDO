@@ -63,58 +63,69 @@ npm run build
 3. Запуск всего приложения (бэкенд + собранный фронт)
 Каждый обычный запуск:
 
-Убедиться, что служба PostgreSQL запущена:
+Вариант 1. Двойной клик (рекомендуется)
+Открой Проводник и перейди в папку:
 
-Win+R → services.msc → служба postgresql-… в статусе «Запущена».
+C:\Users\Novikova\Desktop\STDO\STDO
 
-В консоли:
+Дважды кликни по файлу:
 
-bash
+start_iris.bat
+
+Откроется окно PowerShell, скрипт сам:
+
+поднимет PostgreSQL;
+
+активирует .venv;
+
+применит миграции Alembic;
+
+при необходимости сделает npm install;
+
+запустит backend и frontend в отдельных окнах;
+
+откроет в браузере:
+
+http://127.0.0.1:8000/docs
+
+http://localhost:5173 (или другой порт, если Vite возьмёт 5174/5175).
+Batch‑файл использует PowerShell с временным обходом политики выполнения (-ExecutionPolicy Bypass / RemoteSigned), что является типичным паттерном для запуска .ps1 по двойному клику.
+
+Вариант 2. Запуск из PowerShell
+Открой PowerShell (можно из меню «Пуск»).
+
+Перейди в папку проекта:
+
+powershell
 cd C:\Users\Novikova\Desktop\STDO\STDO
-(Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& .\.venv\Scripts\Activate.ps1)
-python -m alembic upgrade head
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
-Открыть в браузере:
+При необходимости на время сессии разреши запуск локальных скриптов:
 
-UI: http://127.0.0.1:8000
+powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+Политика действует только в текущем процессе PowerShell и не меняет настройки системы глобально.
 
-API docs: http://127.0.0.1:8000/docs
+Запусти лаунчер:
 
-Health: http://127.0.0.1:8000/health
+powershell
+.\start_iris.ps1 -Mode dev
+Он делает те же шаги, что и batch‑обёртка, только запускается напрямую.
 
-4. Режим разработки
-Если нужно быстро править фронт с hot‑reload:
+Что считается успешным запуском
+В окне лаунчера в конце появилось:
 
-Запустить бэкенд с авто‑перезапуском:
+===== FINAL STATUS =====
 
-bash
-cd C:\Users\Novikova\Desktop\STDO\STDO
-(Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& .\.venv\Scripts\Activate.ps1)
-python -m uvicorn main:app --reload --port 8000
-Во втором терминале — фронт:
+Backend: http://127.0.0.1:8000
 
-bash
-cd C:\Users\Novikova\Desktop\STDO\STDO\frontend
-npm run dev
-Работать с UI по адресу из вывода npm run dev (обычно что‑то вроде http://localhost:5173), при этом API остаётся на http://127.0.0.1:8000.
+Docs: http://127.0.0.1:8000/docs
 
-5. Мини‑чеклист, если «не работает»
-Uvicorn не стартует → смотреть traceback в консоли:
+Frontend: http://localhost:5173 (или другой порт)
 
-часто: нет подключения к БД (Postgres не запущен или DSN неправильный).
+В браузере открылись страницы:
 
-Сообщение connection refused к Postgres:
+Swagger: http://127.0.0.1:8000/docs
 
-служба PostgreSQL не запущена;
-
-порт не 5432 или база/логин/пароль не совпадают.
-
-404 на UI по :8000:
-
-не собран фронт (npm run build);
-
-или логика отдачи frontend/dist в main.py выключена/изменена.
-
+Фронт: адрес, указанный в последней строке Frontend:.
 Памятка 2. Конфиги STDO / ДокПоток IRIS
 1. Ключевые файлы конфигурации
 config.py (корень проекта):
@@ -436,3 +447,9 @@ git restore path\to\file
 
 нужно переписывать историю (git filter-repo) и менять скомпрометированные секреты.
 
+9. Тест запуска 
+
+Test-NetConnection 127.0.0.1 -Port 8000
+Test-NetConnection 127.0.0.1 -Port 5173
+Test-NetConnection 127.0.0.1 -Port 5174
+Test-NetConnection 127.0.0.1 -Port 5175
