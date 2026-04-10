@@ -3,6 +3,18 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Optional, Any
 
+# Импорт UTC-aware datetime factory
+from core.datetime_utils import utc_now
+
+
+def _utc_now() -> datetime:
+    """UTC-aware datetime для использования в default_factory."""
+    return datetime.now(timezone.utc)
+
+
+# lazy import для избежания циклической зависимости
+from datetime import timezone
+
 
 @dataclass
 class Tender:
@@ -20,7 +32,7 @@ class Tender:
     expected_review_rounds: int = 1
     expected_remark_count: int = 0
     created_by: Optional[int] = None
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=utc_now)
     assessed_at: Optional[datetime] = None
     assessment_result: Optional[dict[str, Any]] = None
 
@@ -41,7 +53,7 @@ class Tender:
             expected_review_rounds=row.get("expected_review_rounds", 1),
             expected_remark_count=row.get("expected_remark_count", 0),
             created_by=row.get("created_by"),
-            created_at=row.get("created_at", datetime.now()),
+            created_at=row.get("created_at", utc_now()),
             assessed_at=row.get("assessed_at"),
             assessment_result=row.get("assessment_result"),
         )

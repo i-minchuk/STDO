@@ -1,5 +1,5 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Optional
 from core.auth import get_current_user
 from core.service_locator import get_locator
@@ -17,7 +17,11 @@ def weekly_heatmap(
     """Получить недельную тепловую карту активности пользователя."""
     loc = get_locator()
     
+    # Проверка доступа: только админы/менеджеры могут видеть данные других пользователей
     target_user_id = user_id if user_id else current_user.id
+    if user_id and user_id != current_user.id:
+        if current_user.role not in ('admin', 'manager'):
+            raise HTTPException(403, "Вы можете просматривать только свои данные")
     
     # Ограничиваем количество недель
     weeks = max(1, min(weeks, 52))
@@ -40,7 +44,11 @@ def monthly_heatmap(
     """Получить месячную тепловую карту активности пользователя."""
     loc = get_locator()
     
+    # Проверка доступа: только админы/менеджеры могут видеть данные других пользователей
     target_user_id = user_id if user_id else current_user.id
+    if user_id and user_id != current_user.id:
+        if current_user.role not in ('admin', 'manager'):
+            raise HTTPException(403, "Вы можете просматривать только свои данные")
     
     # Ограничиваем количество месяцев
     months = max(1, min(months, 24))
@@ -63,7 +71,11 @@ def activity_summary(
     """Получить сводку активности пользователя за последние N дней."""
     loc = get_locator()
     
+    # Проверка доступа: только админы/менеджеры могут видеть данные других пользователей
     target_user_id = user_id if user_id else current_user.id
+    if user_id and user_id != current_user.id:
+        if current_user.role not in ('admin', 'manager'):
+            raise HTTPException(403, "Вы можете просматривать только свои данные")
     
     # Ограничиваем количество дней
     days = max(1, min(days, 90))

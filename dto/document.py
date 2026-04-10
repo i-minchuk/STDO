@@ -22,6 +22,8 @@ class DocumentDetailDTO(BaseModel):
     status: DocumentStatus
     discipline: Optional[str] = Field(None, max_length=100)
     current_revision_id: Optional[int] = None
+    created_by: int
+    created_at: datetime
     revisions: List[RevisionShortDTO] = []
 
 
@@ -33,3 +35,5 @@ class DocumentListDTO(BaseModel):
     status: DocumentStatus
     discipline: Optional[str] = Field(None, max_length=100)
     current_revision_id: Optional[int] = None
+    created_by: int
+    created_at: datetime

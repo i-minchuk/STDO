@@ -1,7 +1,11 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
 from core.auth import get_current_user
 from core.service_locator import get_locator
+from core.authorization import check_project_access
 from models.user import User
 from models.enums import TaskStatus, ProjectStatus
 
@@ -42,6 +46,9 @@ def portfolio(current_user: User = Depends(get_current_user)):
 
 @router.get("/project/{project_id}")
 def project_health(project_id: int, current_user: User = Depends(get_current_user)):
+    # Проверка доступа к проекту
+    check_project_access(project_id, current_user)
+    
     from datetime import date as date_module
     loc = get_locator()
     project = loc.project_repo.get_by_id(project_id)
@@ -70,6 +77,9 @@ def project_health(project_id: int, current_user: User = Depends(get_current_use
 
 @router.get("/project/{project_id}/engineers")
 def engineer_spi(project_id: int, current_user: User = Depends(get_current_user)):
+    # Проверка доступа к проекту
+    check_project_access(project_id, current_user)
+    
     loc = get_locator()
     tasks = loc.planned_task_repo.get_by_project_id(project_id)
     by_eng = {}
@@ -93,6 +103,9 @@ def engineer_spi(project_id: int, current_user: User = Depends(get_current_user)
 
 @router.get("/project/{project_id}/doc-types")
 def doc_type_spi(project_id: int, current_user: User = Depends(get_current_user)):
+    # Проверка доступа к проекту
+    check_project_access(project_id, current_user)
+    
     loc = get_locator()
     tasks = loc.planned_task_repo.get_by_project_id(project_id)
     by_type = {}
@@ -112,3 +125,77 @@ def doc_type_spi(project_id: int, current_user: User = Depends(get_current_user)
         }
         for dt, data in by_type.items()
     ]
+
+
+class ProjectMetricsDTO(BaseModel):
+    project_id: int
+    calculated_at: Optional[datetime] = None
+    total_tasks: int
+    completed_tasks: int
+    in_progress_tasks: int
+    blocked_tasks: int
+    not_started_tasks: int
+    spi: float
+    cpi: float
+    risk_level: str
+    critical_tasks: int
+    overdue_tasks: int
+    total_planned_hours: Optional[float] = None
+    completed_hours: Optional[float] = None
+
+
+@router.get("/project/{project_id}/metrics", response_model=ProjectMetricsDTO)
+def get_project_metrics(project_id: int, current_user: User = Depends(get_current_user)):
+    """Получить последние сохранённые метрики проекта."""
+    check_project_access(project_id, current_user)
+    
+    loc = get_locator()
+    project = loc.project_repo.get_by_id(project_id)
+    if not project:
+        raise HTTPException(404, "Project not found")
+    
+    # Пробуем получить метрики из БД
+    metrics = loc.project_dashboard.get_latest_metrics(project_id)
+    
+    if metrics is None:
+        # Если метрик нет - пересчитываем
+        metrics = loc.project_dashboard.recalculate_project_metrics(project_id)
+        # Пересчитанные метрики не имеют calculated_at
+        metrics["calculated_at"] = None
+    
+    return ProjectMetricsDTO(
+        project_id=project_id,
+        calculated_at=metrics.get("calculated_at"),
+        total_tasks=metrics.get("total", 0),
+        completed_tasks=metrics.get("completed", 0),
+        in_progress_tasks=metrics.get("in_progress", 0),
+        blocked_tasks=metrics.get("blocked", 0),
+        not_started_tasks=metrics.get("not_started", 0),
+        spi=metrics.get("spi", 1.0),
+        cpi=metrics.get("cpi", 1.0),
+        risk_level=metrics.get("risk_level", "low"),
+        critical_tasks=metrics.get("critical_tasks", 0),
+        overdue_tasks=metrics.get("overdue_tasks", 0),
+        total_planned_hours=metrics.get("total_planned_hours"),
+        completed_hours=metrics.get("completed_hours"),
+    )
+
+
+@router.post("/project/{project_id}/metrics/recalculate")
+def recalculate_project_metrics(project_id: int, current_user: User = Depends(get_current_user)):
+    """Принудительно пересчитать метрики проекта и сохранить в БД."""
+    check_project_access(project_id, current_user)
+    
+    loc = get_locator()
+    project = loc.project_repo.get_by_id(project_id)
+    if not project:
+        raise HTTPException(404, "Project not found")
+    
+    # Пересчитываем метрики (с сохранением в БД)
+    metrics = loc.project_dashboard.recalculate_project_metrics(project_id)
+    
+    return {
+        "status": "ok",
+        "project_id": project_id,
+        "metrics": metrics,
+    }

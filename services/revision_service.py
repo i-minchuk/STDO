@@ -79,10 +79,14 @@ class RevisionService:
 
             self._documents.update_current_revision(document.id, revision.id)
 
-            if document.status in (DocumentStatus.APPROVED, DocumentStatus.ARCHIVED):
-                self._documents.update_status(
-                    document.id, DocumentStatus.IN_WORK, revision.id
-                )
+            if document.status == DocumentStatus.APPROVED:
+                self._documents.update_status(document.id, DocumentStatus.IN_WORK, revision.id)
+            elif document.status == DocumentStatus.ARCHIVED:
+                self._documents.update_status(document.id, DocumentStatus.IN_WORK, revision.id)
+            # ДОБАВИТЬ:
+            elif document.status == DocumentStatus.ON_REVIEW:
+                # Новая ревизия создана пока документ на проверке
+                self._documents.update_status(document.id, DocumentStatus.IN_WORK, revision.id)
 
             self._revisions.mark_previous_revisions_superseded(
                 document.id, revision.id
@@ -99,6 +103,13 @@ class RevisionService:
             revision = self._revisions.get_by_id(revision_id)
             if not revision:
                 raise ValueError(f"Revision {revision_id} not found")
+
+            # Проверка: ревизия должна быть на проверке (ON_REVIEW)
+            if revision.status != RevisionStatus.ON_REVIEW:
+                raise ValueError(
+                    f"Ревизия должна быть на проверке для утверждения. "
+                    f"Текущий статус: {revision.status.value}"
+                )
 
             self._revisions.approve_revision(revision_id, approved_by)
 

@@ -1,8 +1,9 @@
 from typing import Sequence, Optional
-from datetime import date, datetime
+from datetime import date
 
 from db.database import Database
 from models.daily_quest import DailyQuest
+from core.datetime_utils import utc_now
 
 
 class DailyQuestRepository:
@@ -97,12 +98,13 @@ class DailyQuestRepository:
 
         # Check if completed
         if quest.current_count >= quest.target_count and not quest.is_completed:
+            now = utc_now()
             self._db.execute(
                 "UPDATE daily_quests SET is_completed = true, completed_at = %s WHERE id = %s",
-                (datetime.now(), quest.id),
+                (now, quest.id),
             )
             quest.is_completed = True
-            quest.completed_at = datetime.now()
+            quest.completed_at = now
 
         return quest
 

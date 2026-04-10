@@ -124,7 +124,7 @@ def _get_level(score: int) -> tuple:
     return level, LEVEL_TITLES.get(level, "Новичок")
 
 
-def award_gamification_with_badges(locator, user_id: int, event_type: str, points: int, project_id: Optional[int] = None, comment: Optional[str] = None):
+def award_gamification_with_badges(locator, user_id: int, event_type: str, points: int, project_id: Optional[int] = None, comment: Optional[str] = None, action_key: Optional[str] = None):
     """Award gamification points and check for badge unlocks."""
     from typing import Optional
     
@@ -135,13 +135,20 @@ def award_gamification_with_badges(locator, user_id: int, event_type: str, point
     except:
         adjusted_points = points
     
-    locator.gamification_event_repo.insert(
+    # Insert event (с проверкой на дубликат по action_key для идемпотентности)
+    event = locator.gamification_event_repo.insert(
         user_id=user_id,
         event_type=event_type,
         points_delta=adjusted_points,
         project_id=project_id,
+        action_key=action_key,
         comment=comment,
     )
+    
+    # Если событие было дубликатом (вернулся None) - не выполняем остальные действия
+    if event is None:
+        logger.info("Skipping badge check due to duplicate event: %s", action_key)
+        return
     
     # Update combo achievement for tracking streaks
     try:

@@ -1,8 +1,11 @@
 from typing import Optional, Sequence, Dict, Any
 from datetime import datetime
+import logging
 
 from db.database import Database
 from models.gamification_event import GamificationEvent
+
+logger = logging.getLogger(__name__)
 
 
 class GamificationEventRepository:
@@ -27,6 +30,17 @@ class GamificationEventRepository:
         ref_task_id: Optional[int] = None,
         comment: Optional[str] = None,
     ) -> GamificationEvent:
+        # Проверка на дубликат по action_key (для идемпотентности)
+        if action_key:
+            existing = self._db.fetch_one(
+                "SELECT id FROM gamification_events WHERE action_key = %s",
+                (action_key,),
+            )
+            if existing:
+                logger.info("Duplicate gamification event skipped: action_key=%s", action_key)
+                # Возвращаем существующее событие (или None)
+                return None
+
         row = self._db.fetch_one(
             f"""
             INSERT INTO gamification_events

@@ -70,7 +70,7 @@ class ServiceLocator:
             self.db, self.task_repo, self.dep_repo,
         )
         self.project_dashboard = ProjectDashboardService(
-            self.project_repo, self.task_repo,
+            self.project_repo, self.task_repo, self.db,
         )
         self.time_calculation = TimeCalculationService(self.work_schedule_repo)
         self.heatmap_service = HeatmapService(self.time_log_repo)

@@ -15,12 +15,12 @@ export interface TokenResponse {
 
 export interface Project {
   id: number;
-  number: string;
+  code: string;  // Соответствует backend ProjectShortDTO.code
   name: string;
   status: string;
   customer: string;
   start_date: string | null;
-  end_date_plan: string | null;
+  end_date_plan: string | null;  // Соответствует backend end_date_planned
   total_tasks: number;
   completed_tasks: number;
   spi: number | null;
@@ -46,11 +46,16 @@ export interface Document {
 
 export interface Revision {
   id: number;
-  letter: string;
-  number: number;
+  revision_index: string;    // Соответствует RevisionDTO.revision_index
+  revision_letter: string;   // Было letter -> revision_letter (backend)
+  revision_number: number;   // Было number -> revision_number (backend)
   status: string;
   created_at: string | null;
   file_path: string | null;
+  change_log?: string;
+  created_by?: number;
+  approved_by?: number;
+  approved_at?: string | null;
 }
 
 export interface DocumentDetail extends Document {
@@ -139,7 +144,7 @@ export interface Notification {
 }
 
 export interface ProjectHealth {
-  project: { id: number; name: string; number: string };
+  project: { id: number; name: string; code: string };  // Исправлено: number -> code
   spi: number | null;
   total_tasks: number;
   completed_tasks: number;

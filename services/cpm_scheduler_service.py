@@ -67,6 +67,19 @@ class CPMSchedulerService:
                 if in_degree[succ] == 0:
                     queue.append(succ)
 
+        # Проверка на циклические зависимости
+        if len(es) != len(task_map):
+            processed_ids = set(es.keys())
+            unprocessed = [tid for tid in task_map if tid not in processed_ids]
+            logger.error(
+                "Cycle detected in project %d: %d tasks not processed: %s",
+                project_id, len(unprocessed), unprocessed
+            )
+            raise ValueError(
+                f"Обнаружена циклическая зависимость задач. "
+                f"Необработанные задачи: {unprocessed}"
+            )
+
         if not ef:
             return []
 

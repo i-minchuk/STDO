@@ -50,6 +50,12 @@ def client():
     mock_locator.planned_task_repo.get_all.return_value = []
     mock_locator.planned_task_repo.insert.return_value = MagicMock()
 
+    # Mock work_schedule_repo for assess endpoint
+    mock_schedule = MagicMock()
+    mock_schedule.work_days = [0, 1, 2, 3, 4]  # Mon-Fri
+    mock_locator.work_schedule_repo.get_default_schedule.return_value = mock_schedule
+    mock_locator.work_schedule_repo.count_work_days.return_value = 20
+
     mock_locator.cpm_scheduler.recalculate_project_schedule.return_value = []
     mock_locator.project_dashboard.recalculate_project_metrics.return_value = None
     mock_locator.gamification_event_repo.insert.return_value = MagicMock()

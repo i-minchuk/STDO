@@ -34,6 +34,25 @@ def create_revision(
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    # Проверка существования пользователя-создателя
+    user = locator.user_repo.get_by_id(meta.created_by)
+    if not user:
+        raise HTTPException(status_code=400, detail="Пользователь не найден")
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Пользователь деактивирован")
+
+    # Проверка существования reviewer (если указан)
+    if meta.reviewer_id:
+        reviewer = locator.user_repo.get_by_id(meta.reviewer_id)
+        if not reviewer or not reviewer.is_active:
+            raise HTTPException(status_code=400, detail="Рецензент не найден или деактивирован")
+
+    # Проверка существования approver (если указан)
+    if meta.approver_id:
+        approver = locator.user_repo.get_by_id(meta.approver_id)
+        if not approver or not approver.is_active:
+            raise HTTPException(status_code=400, detail="Утверждающий не найден или деактивирован")
+
     try:
         revision = locator.document_workflow.create_revision_with_workflow(
             document_id=document_id,
@@ -69,12 +88,15 @@ def create_revision(
     )
 
     # Award gamification points for creating a revision
+    # Используем action_key для идемпотентности
+    action_key_create = f"revision_created:{revision.id}:{meta.created_by}"
     award_gamification_with_badges(
         locator=locator,
         user_id=meta.created_by,
         event_type="revision_created",
         points=5,  # 5 points for creating a revision
         project_id=doc.project_id,
+        action_key=action_key_create,
         comment=f"Создана ревизия {revision.revision_number} для документа {doc.code}",
     )
 
@@ -127,6 +149,8 @@ def approve_revision(
         raise HTTPException(status_code=400, detail=str(exc))
 
     # Award gamification points for approving a revision
+    # Используем action_key для идемпотентности
+    action_key_approve = f"revision_approved:{revision.id}:{body.approved_by}"
     doc = locator.document_repo.get_by_id(revision.document_id)
     award_gamification_with_badges(
         locator=locator,
@@ -134,6 +158,7 @@ def approve_revision(
         event_type="revision_approved",
         points=8,  # Points for approving a revision
         project_id=doc.project_id if doc else None,
+        action_key=action_key_approve,
         comment=f"Одобрена ревизия {revision.revision_number} для документа {doc.code if doc else 'unknown'}",
     )
 

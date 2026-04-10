@@ -31,6 +31,8 @@ class Database:
     def _configure_connection(connection: Connection) -> None:
         """Configure new psycopg connections for the pool."""
         connection.row_factory = dict_row
+        # Set session timezone to UTC for consistency
+        connection.execute("SET TIME ZONE 'UTC'")
 
     def connect(self) -> None:
         """Initialize connection pool."""

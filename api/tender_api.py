@@ -1,14 +1,20 @@
 from __future__ import annotations
 import math
 import logging
-from datetime import date, timedelta, datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date, timedelta
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, field_validator, model_validator
 from typing import List, Optional
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from core.auth import get_current_user, require_role
 from core.service_locator import get_locator
+from core.datetime_utils import utc_now
 from models.user import User
 from models.enums import TaskStatus, TaskType
+
+# Rate limiter для tender endpoints
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/api/tender", tags=["tender"])
 
@@ -98,7 +104,9 @@ def _add_risk(risks: list[dict], level: str, text: str) -> None:
 
 
 @router.post("/assess")
+@limiter.limit("10/minute")  # 10 запросов в минуту на пользователя
 def assess_tender(
+    request: Request,  # Required for rate limiter
     body: TenderAssessment,
     current_user: User = Depends(get_current_user),
 ):
@@ -400,7 +408,9 @@ def assess_tender(
 # New endpoints for CRUD operations
 
 @router.get("/")
+@limiter.limit("30/minute")
 def list_tenders(
+    request: Request,
     status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
@@ -442,7 +452,9 @@ def list_tenders(
 
 
 @router.get("/{tender_id}")
+@limiter.limit("30/minute")
 def get_tender(
+    request: Request,
     tender_id: int,
     current_user: User = Depends(get_current_user),
 ):
@@ -538,7 +550,7 @@ def update_tender_status(
     assessment_result = tender.assessment_result
     if status in ("approved", "rejected") and tender.assessment_result:
         assessment_result = dict(tender.assessment_result)
-        assessment_result["status_changed_at"] = datetime.now().isoformat()
+        assessment_result["status_changed_at"] = utc_now().isoformat()
         assessment_result["status_changed_by"] = current_user.id
 
     updated = loc.tender_repo.update_status(tender_id, status, assessment_result)

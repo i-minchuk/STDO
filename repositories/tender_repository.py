@@ -1,10 +1,11 @@
 from __future__ import annotations
 from typing import Optional, Sequence
 import json
-from datetime import datetime, date
+from datetime import date
 
 from db.database import Database
 from models.tender import Tender, TenderDocument
+from core.datetime_utils import utc_now
 
 
 class TenderRepository:
@@ -130,7 +131,7 @@ class TenderRepository:
         status: str,
         assessment_result: Optional[dict] = None,
     ) -> Optional[Tender]:
-        assessed_at = datetime.now() if status == "assessed" else None
+        assessed_at = utc_now() if status == "assessed" else None
         self._db.execute(
             """
             UPDATE tenders

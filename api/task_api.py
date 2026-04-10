@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 from core.auth import get_current_user
 from core.service_locator import get_locator
+from core.authorization import check_project_access, check_task_access
 from models.user import User
 from models.enums import TaskStatus, TaskType
 from api.gamification_api import award_gamification_with_badges
@@ -35,6 +36,9 @@ def today_tasks(current_user: User = Depends(get_current_user)):
 
 @router.get("/project/{project_id}")
 def project_tasks(project_id: int, current_user: User = Depends(get_current_user)):
+    # Проверка доступа к проекту
+    check_project_access(project_id, current_user)
+    
     loc = get_locator()
     tasks = loc.planned_task_repo.get_by_project_id(project_id)
     return [_task_to_dict(t) for t in tasks]
@@ -42,6 +46,9 @@ def project_tasks(project_id: int, current_user: User = Depends(get_current_user
 
 @router.get("/{task_id}")
 def get_task(task_id: int, current_user: User = Depends(get_current_user)):
+    # Проверка доступа к задаче
+    check_task_access(task_id, current_user)
+    
     loc = get_locator()
     task = loc.planned_task_repo.get_by_id(task_id)
     if not task:
@@ -55,6 +62,11 @@ def update_status(task_id: int, body: StatusUpdate, current_user: User = Depends
     task = loc.planned_task_repo.get_by_id(task_id)
     if not task:
         raise HTTPException(404, "Task not found")
+    
+    # Проверка: пользователь должен быть исполнителем или иметь роль manager/admin
+    if task.assigned_to is not None and task.assigned_to != current_user.id:
+        if current_user.role not in ('admin', 'manager'):
+            raise HTTPException(403, "Вы не являетесь исполнителем этой задачи")
     try:
         new_status = TaskStatus(body.status)
     except ValueError:
@@ -122,6 +134,9 @@ def update_status(task_id: int, body: StatusUpdate, current_user: User = Depends
 
 @router.put("/{task_id}/log-time")
 def log_time(task_id: int, body: TimeLog, current_user: User = Depends(get_current_user)):
+    # Проверка доступа к задаче
+    check_task_access(task_id, current_user)
+    
     loc = get_locator()
     task = loc.planned_task_repo.get_by_id(task_id)
     if not task:
