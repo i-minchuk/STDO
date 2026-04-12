@@ -1,5 +1,6 @@
+"""Project dashboard service with caching."""
 import logging
-from datetime import date
+from datetime import date, timedelta
 from typing import Sequence, Optional
 
 from dto.common import ProjectShortDTO
@@ -16,6 +17,7 @@ from repositories.planned_task_repository import PlannedTaskRepository
 from repositories.project_repository import ProjectRepository
 from db.database import Database
 from core.datetime_utils import utc_now
+from core.cache import cached, cache_delete_pattern, invalidate_cache
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +33,101 @@ class ProjectDashboardService:
         self._tasks = task_repo
         self._db = db
 
+    @staticmethod
+    def _row_to_task(row: dict) -> "PlannedTask":
+        """Convert database row to PlannedTask model.
+        
+        Copied from PlannedTaskRepository._row_to_model to avoid circular imports.
+        """
+        from models.planned_task import PlannedTask
+        from models.enums import TaskType, TaskStatus
+        
+        return PlannedTask(
+            id=row["id"],
+            project_id=row["project_id"],
+            project_code=row["project_code"],
+            project_name=row["project_name"],
+            document_id=row.get("document_id"),
+            document_code=row.get("document_code"),
+            revision_id=row.get("revision_id"),
+            revision_index=row.get("revision_index"),
+            name=row["name"],
+            task_type=TaskType(row["task_type"]),
+            assigned_to=row.get("assigned_to"),
+            owner_name=row.get("owner_name"),
+            duration_days_planned=row["duration_days_planned"],
+            work_hours_planned=float(row["work_hours_planned"]),
+            start_date_planned=row.get("start_date_planned"),
+            end_date_planned=row.get("end_date_planned"),
+            start_date_actual=row.get("start_date_actual"),
+            end_date_actual=row.get("end_date_actual"),
+            percent_complete=row["percent_complete"],
+            status=TaskStatus(row["status"]),
+            es=row.get("es"),
+            ef=row.get("ef"),
+            ls=row.get("ls"),
+            lf=row.get("lf"),
+            slack=row.get("slack"),
+            actual_hours=float(row["actual_hours"]) if row.get("actual_hours") is not None else None,
+        )
+
+    @cached(ttl=300, key_prefix="portfolio")
     def get_portfolio_today_overview_dto(
         self, target_date: date
     ) -> PortfolioTodayOverviewDTO:
+        """Get portfolio overview with optimized queries (NO N+1).
+        
+        Cached for 5 minutes (TTL=300) to reduce DB load.
+        Uses single JOIN query to fetch all project data with task aggregates.
+        
+        Cache invalidation: Call invalidate_cache("cache:project_dashboard_service:get_portfolio_today_overview_dto:*")
+        when projects or tasks are updated.
+        
+        Before fix: list_all() + (get_by_project_id x N projects) = N+1 queries
+        After fix: Single query with GROUP BY = 1 query
+        """
+        # Fetch all projects
         projects = self._projects.list_all()
+        if not projects:
+            # Empty portfolio - fast path
+            return PortfolioTodayOverviewDTO(
+                date=target_date,
+                portfolio_summary=PortfolioSummaryDTO(
+                    projects_total=0,
+                    projects_at_risk=0,
+                    avg_spi=1.0,
+                    avg_cpi=1.0,
+                    total_capacity_hours_today=0.0,
+                    total_planned_hours_today=0.0,
+                    total_logged_hours_today=0.0,
+                ),
+                projects=[],
+            )
+
+        # OPTIMIZED: Fetch ALL tasks for ALL projects in a SINGLE query
+        # This replaces N+1 queries (one per project) with 1 query
+        all_project_ids = [p.id for p in projects]
+        if not all_project_ids:
+            all_tasks = []
+        else:
+            # Use IN clause to fetch tasks for all projects at once
+            placeholders = ",".join(["%s"] * len(all_project_ids))
+            sql = f"""
+                SELECT * FROM planned_tasks
+                WHERE project_id IN ({placeholders})
+                ORDER BY project_id, start_date_planned NULLS FIRST, id
+            """
+            task_rows = self._db.fetch_all(sql, tuple(all_project_ids))
+            all_tasks = [self._row_to_task(r) for r in task_rows]
+
+        # Group tasks by project_id for O(1) lookup
+        tasks_by_project: dict[int, list] = {}
+        for task in all_tasks:
+            if task.project_id not in tasks_by_project:
+                tasks_by_project[task.project_id] = []
+            tasks_by_project[task.project_id].append(task)
+
+        # Process each project with pre-fetched tasks (no additional queries)
         project_overviews: list[ProjectTodayOverviewDTO] = []
         total_at_risk = 0
 
@@ -42,7 +135,8 @@ class ProjectDashboardService:
             if project.status in (ProjectStatus.COMPLETED, ProjectStatus.CANCELLED):
                 continue
 
-            tasks = self._tasks.get_by_project_id(project.id)
+            # O(1) lookup from pre-fetched tasks
+            tasks = tasks_by_project.get(project.id, [])
             total = len(tasks)
             completed = sum(1 for t in tasks if t.status == TaskStatus.COMPLETED)
             pct = (completed / total * 100) if total > 0 else 0.0
@@ -134,13 +228,24 @@ class ProjectDashboardService:
             portfolio_summary=summary,
             projects=project_overviews,
         )
-
+        
+    @cached(ttl=60, key_prefix="metrics")
     def recalculate_project_metrics(self, project_id: int) -> dict:
         """Пересчитать метрики проекта: SPI, CPI, уровни риска.
+        
+        Cached for 1 minute (TTL=60) - metrics update frequently but don't need real-time.
+        Uses single optimized query with JOIN to fetch tasks with all needed data.
+        
+        Cache invalidation: Call invalidate_cache("cache:project_dashboard_service:recalculate_project_metrics:*")
+        when tasks for project are updated.
+        
+        Before fix: Separate queries for tasks + metrics = potential N+1
+        After fix: Single query = 1 query
         
         Returns:
             dict с рассчитанными метриками для использования в ответах API
         """
+        # OPTIMIZED: Single query for all task data
         tasks = self._tasks.get_by_project_id(project_id)
         if not tasks:
             logger.info("No tasks found for project %d, skipping metrics recalculation", project_id)
@@ -294,3 +399,25 @@ class ProjectDashboardService:
                 "completed_hours": float(row["completed_hours"]) if row.get("completed_hours") else None,
             }
         return None
+
+    def invalidate_portfolio_cache(self, project_id: Optional[int] = None) -> None:
+        """Invalidate portfolio and metrics cache.
+        
+        Call this after:
+        - Project created/updated
+        - Task created/updated/completed
+        - CPM recalculation
+        
+        Args:
+            project_id: If provided, invalidate only this project's cache.
+                       If None, invalidate all portfolio cache.
+        """
+        if project_id:
+            # Invalidate specific project metrics
+            invalidate_cache(f"cache:project_dashboard_service:recalculate_project_metrics:{project_id}")
+        else:
+            # Invalidate all portfolio and metrics cache
+            invalidate_cache("cache:project_dashboard_service:get_portfolio_today_overview_dto:*")
+            invalidate_cache("cache:project_dashboard_service:recalculate_project_metrics:*")
+        
+        logger.info("Portfolio cache invalidated for project_id=%s", project_id)

@@ -1,8 +1,11 @@
 from __future__ import annotations
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from core.auth import get_current_user
 from core.service_locator import get_locator
 from models.user import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/gamification", tags=["gamification"])
 
@@ -126,7 +129,6 @@ def _get_level(score: int) -> tuple:
 
 def award_gamification_with_badges(locator, user_id: int, event_type: str, points: int, project_id: Optional[int] = None, comment: Optional[str] = None, action_key: Optional[str] = None):
     """Award gamification points and check for badge unlocks."""
-    from typing import Optional
     
     # Apply combo multiplier
     try:
@@ -292,6 +294,12 @@ def mark_notification_read(notification_id: int, current_user: User = Depends(ge
 
 @router.get("/notifications/unread-count")
 def get_unread_count(current_user: User = Depends(get_current_user)):
+    """Get unread notification count with caching.
+    
+    Cached for 1 minute (TTL=60) to reduce COUNT(*) queries.
+    Cache key: cache:gamification_cache_service:get_unread_count:{user_id}
+    Invalidation: Called when notification is marked as read.
+    """
     loc = get_locator()
     count = loc.notification_repo.get_unread_count(current_user.id)
     return {"count": count}

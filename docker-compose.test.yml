@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: iris_test_db
+    environment:
+      POSTGRES_DB: iris_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d iris_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iris_test_backend
+    environment:
+      DB_DSN: postgresql://test:test@postgres:5432/iris_test
+      SECRET_KEY: test-secret-key-for-integration-tests-only
+      DISABLE_CACHE: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      bash -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        echo 'Running migrations...' &&
+        python -m db.migrations_runner &&
+        echo 'Running integration tests...' &&
+        pytest tests/test_integration.py tests/test_api.py tests/test_health_api.py -v --tb=short &&
+        echo 'All integration tests passed'
+      "
+
+  # Service for running tests without building backend image
+  test_runner:
+    image: python:3.12-slim
+    container_name: iris_integration_tests
+    working_dir: /app
+    environment:
+      DB_DSN: postgresql://test:test@postgres:5432/iris_test
+      SECRET_KEY: test-secret-key-for-integration-tests-only
+      DISABLE_CACHE: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: >
+      bash -c "
+        pip install -e . > /dev/null 2>&1 &&
+        echo 'Running migrations...' &&
+        python -m db.migrations_runner &&
+        echo 'Running integration tests...' &&
+        pytest tests/test_integration.py -v --tb=short &&
+        echo 'Integration tests completed'
+      "

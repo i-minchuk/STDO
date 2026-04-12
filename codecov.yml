@@ -1,0 +1,47 @@
+# Codecov configuration for DokPotok IRIS
+
+coverage:
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 5%
+        base: auto
+    patch:
+      default:
+        target: 80%
+        threshold: 10%
+        base: auto
+
+# Ignore test files and migrations from coverage
+ignore:
+  - "tests/**"
+  - "alembic/**"
+  - "**/test_*.py"
+  - "**/migrations/**"
+
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  hide_project_coverage: false
+
+# Flags for different components
+flags:
+  backend:
+    paths:
+      - services/
+      - repositories/
+      - api/
+    carryforward: true
+  
+  frontend:
+    paths:
+      - frontend/src/
+    carryforward: true
+
+# GitHub integration
+github_checks:
+  annotations: true

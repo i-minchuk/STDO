@@ -45,13 +45,19 @@ class Config:
         "SECRET_KEY",
         "iris-secret-key-change-in-production",
     ))
-    log_level: str = field(default_factory=lambda: _env_or_default(
-        "LOG_LEVEL",
-        "INFO",
-    ))
-
+    
     def __post_init__(self) -> None:
         Path(self.storage_root).mkdir(parents=True, exist_ok=True)
+
+        # Security: reject weak default secret key in production
+        if self.secret_key == "iris-secret-key-change-in-production":
+            import warnings
+            warnings.warn(
+                "WARNING: Using default SECRET_KEY. "
+                "Set SECRET_KEY environment variable in production!",
+                UserWarning,
+                stacklevel=2
+            )
 
 
 def load_config() -> Config:

@@ -3,36 +3,39 @@ from datetime import datetime, date, timedelta
 
 from db.database import Database
 from models.work_schedule import WorkSchedule
+from repositories.base_repository import BaseRepository
 
 
-class WorkScheduleRepository:
-    def __init__(self, db: Database) -> None:
-        self._db = db
-
-    _COLUMNS = """
-        id, name, work_days, start_time_hours, end_time_hours,
-        lunch_duration_hours, is_default
+class WorkScheduleRepository(BaseRepository[WorkSchedule]):
+    """Repository for work schedules with BaseRepository for CRUD operations.
+    
+    Migrated to BaseRepository to reduce boilerplate.
+    Custom methods: get_default_schedule, create_schedule, update_schedule,
+                    count_work_days, add_work_days, add_work_hours
     """
+
+    def __init__(self, db: Database) -> None:
+        super().__init__(
+            db=db,
+            model_class=WorkSchedule,
+            table_name="work_schedules",
+            columns="id, name, work_days, start_time_hours, end_time_hours, lunch_duration_hours, is_default"
+        )
 
     def get_default_schedule(self) -> Optional[WorkSchedule]:
         """Get the default work schedule."""
         row = self._db.fetch_one(
-            f"SELECT {self._COLUMNS} FROM work_schedules WHERE is_default = true LIMIT 1"
+            f"SELECT {self._columns} FROM {self._table_name} WHERE is_default = true LIMIT 1"
         )
         return self._row_to_model(row) if row else None
 
     def get_schedule_by_id(self, schedule_id: int) -> Optional[WorkSchedule]:
-        """Get work schedule by ID."""
-        row = self._db.fetch_one(
-            f"SELECT {self._COLUMNS} FROM work_schedules WHERE id = %s",
-            (schedule_id,)
-        )
-        return self._row_to_model(row) if row else None
+        """Get work schedule by ID (uses BaseRepository.get_by_id)."""
+        return self.get_by_id(schedule_id)
 
     def get_all_schedules(self) -> Sequence[WorkSchedule]:
-        """Get all work schedules."""
-        rows = self._db.fetch_all(f"SELECT {self._COLUMNS} FROM work_schedules ORDER BY is_default DESC")
-        return [self._row_to_model(r) for r in rows]
+        """Get all work schedules (uses BaseRepository.list_all)."""
+        return self.list_all(order_by="is_default DESC")
 
     def create_schedule(
         self,
@@ -49,10 +52,10 @@ class WorkScheduleRepository:
             self._db.execute("UPDATE work_schedules SET is_default = false")
 
         row = self._db.fetch_one(
-            f"""INSERT INTO work_schedules
+            f"""INSERT INTO {self._table_name}
                (name, work_days, start_time_hours, end_time_hours, lunch_duration_hours, is_default)
                VALUES (%s, %s, %s, %s, %s, %s)
-               RETURNING {self._COLUMNS}""",
+               RETURNING {self._columns}""",
             (name, work_days, start_time_hours, end_time_hours, lunch_duration_hours, is_default)
         )
         return self._row_to_model(row)
@@ -101,7 +104,7 @@ class WorkScheduleRepository:
             return schedule
 
         values.append(schedule_id)
-        query = f"UPDATE work_schedules SET {', '.join(updates)} WHERE id = %s RETURNING {self._COLUMNS}"
+        query = f"UPDATE {self._table_name} SET {', '.join(updates)} WHERE id = %s RETURNING {self._columns}"
         row = self._db.fetch_one(query, values)
         return self._row_to_model(row) if row else None
 
@@ -206,6 +209,4 @@ class WorkScheduleRepository:
 
         return current
 
-    @staticmethod
-    def _row_to_model(row: dict) -> WorkSchedule:
-        return WorkSchedule.from_row(row)
+    # Note: _row_to_model is inherited from BaseRepository

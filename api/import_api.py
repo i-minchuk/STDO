@@ -1,7 +1,8 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from pydantic import BaseModel
 from typing import Optional, List, Dict
+from core.rate_limiter import limiter
 from core.auth import get_current_user, require_role
 from core.service_locator import get_locator
 from models.user import User
@@ -25,10 +26,15 @@ class ImportConfig(BaseModel):
 
 @router.post("/excel/preview")
 async def preview_excel(
+    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
     """Загрузка Excel файла — возвращает список листов, колонок и первые 5 строк для превью."""
+    # Validate file extension
+    if not file.filename.lower().endswith(('.xlsx', '.xlsm')):
+        raise HTTPException(400, "Only .xlsx files are allowed")
+    
     try:
         import openpyxl
         from io import BytesIO
@@ -84,11 +90,16 @@ def get_target_fields(current_user: User = Depends(get_current_user)):
 
 @router.post("/excel/execute")
 async def execute_import(
+    request: Request,
     config: str = "",  # JSON ImportConfig
     file: UploadFile = File(...),
     current_user: User = Depends(require_role("admin", "manager")),
 ):
     """Импорт данных из Excel в проект по настроенному маппингу."""
+    # Validate file extension
+    if not file.filename.lower().endswith(('.xlsx', '.xlsm')):
+        raise HTTPException(400, "Only .xlsx files are allowed")
+    
     try:
         import openpyxl
         from io import BytesIO

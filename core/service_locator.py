@@ -26,6 +26,10 @@ from repositories.user_repository import UserRepository
 from repositories.time_log_repository import TimeLogRepository
 from repositories.tender_repository import TenderRepository
 from services.auth_service import AuthService
+from core.cache import init_cache
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ServiceLocator:
@@ -94,6 +98,11 @@ _locator: ServiceLocator | None = None
 def init_locator(cfg: Config) -> ServiceLocator:
     global _locator
     _locator = ServiceLocator(cfg)
+    
+    # Initialize cache (Redis or in-memory fallback)
+    redis_url = getattr(cfg, 'redis_url', None)
+    init_cache(redis_url)
+    
     return _locator
 
 

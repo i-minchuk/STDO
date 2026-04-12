@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   lint:
@@ -22,6 +22,10 @@ jobs:
       - uses: ./.github/actions/frontend-install
       - run: python -m pre_commit run --all-files
       - run: python -m compileall .
+      - name: Security scan with safety
+        run: |
+          pip install safety
+          safety check -r requirements.txt
 
   test:
     name: Run unit tests
@@ -36,12 +40,35 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - uses: ./.github/actions/python-deps
-      - run: python -m pytest -q -m 'not integration'
+      - run: python -m pytest -q -m 'not integration' --cov=services --cov=repositories --cov=api --cov-report=xml
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: backend
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
 
   docker-build:
     name: Build Docker image
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, security-scan]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-build
@@ -68,7 +95,7 @@ jobs:
       IRIS_DB_DSN: postgresql://postgres:postgres@localhost:5432/iris_test
       TEST_DB_DSN: postgresql://postgres:postgres@localhost:5432/iris_test
       IRIS_STORAGE_ROOT: /tmp/iris_test_storage
-      IRIS_SECRET_KEY: iris-secret-key-change-in-production
+      IRIS_SECRET_KEY: iris-secret-key-test-only
       IRIS_LOG_LEVEL: INFO
     steps:
       - uses: actions/checkout@v4

@@ -20,7 +20,7 @@ class ProjectRepository(BaseRepository[Project]):
         super().__init__(db, Project, "projects", self._COLUMNS)
 
     def list_all(self) -> Sequence[Project]:
-        return self.list_all(order_by="name")
+        return super().list_all(order_by="name")
 
     def list_all_paginated(self, limit: int = 20, offset: int = 0) -> tuple[Sequence[Project], int]:
         """List all projects with pagination.

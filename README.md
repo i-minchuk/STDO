@@ -126,7 +126,27 @@ docker compose up --build
 For a production-like stack, use the production compose file:
 
 ```bash
-docker compose -f docker-compose.prod.yml up --build
+docker compose -f docker-compose.production.yml up --build
+```
+
+For local development with live frontend reload, use dev container (recommended) or run frontend separately:
+
+```bash
+# Option 1: Use dev container (recommended)
+# Open in VS Code and choose "Reopen in Container"
+
+# Option 2: Run frontend separately
+cd frontend
+npm run dev
+# Then start backend:
+python main.py
+```
+
+To run pre-commit checks:
+
+```bash
+python -m pre_commit install
+python -m pre_commit run --all-files
 ```
 
 For local development with live frontend reload, use the dev compose file and run the frontend from the browser at http://localhost:5432
@@ -223,7 +243,8 @@ npm run build
 | POST | `/api/documents/{id}/revisions` | Create revision with file upload |
 | POST | `/api/revisions/{id}/approve` | Approve a revision |
 | POST | `/api/internal/projects/{id}/recalc_cpm_and_metrics` | Recalculate CPM schedule |
-| GET | `/health` | Health check |
+| GET | `/api/health` | Health check |
+| GET | `/docs` | Swagger API documentation |
 
 ## Architecture
 

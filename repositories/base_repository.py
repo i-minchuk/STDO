@@ -25,6 +25,11 @@ class BaseRepository(Generic[T]):
         return self._row_to_model(row) if row else None
 
     def list_all(self, order_by: str = "id") -> Sequence[T]:
+        # Whitelist for order_by to prevent SQL injection
+        allowed_columns = {"id", "created_at", "updated_at", "name", "code", "status"}
+        if order_by not in allowed_columns:
+            order_by = "id"
+        
         rows = self._db.fetch_all(
             f"SELECT {self._columns} FROM {self._table_name} ORDER BY {order_by}"
         )

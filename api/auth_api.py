@@ -1,5 +1,6 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from core.rate_limiter import limiter
 from core.auth import get_current_user
 from core.service_locator import get_locator
 from dto.auth import (
@@ -12,7 +13,8 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(body: LoginRequest):
+@limiter.limit("5/minute")
+async def login(request: Request, body: LoginRequest):
     loc = get_locator()
     user = loc.auth_service.authenticate(body.username, body.password)
     if not user:

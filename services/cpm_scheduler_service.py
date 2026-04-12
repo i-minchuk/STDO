@@ -75,9 +75,11 @@ class CPMSchedulerService:
                 "Cycle detected in project %d: %d tasks not processed: %s",
                 project_id, len(unprocessed), unprocessed
             )
-            raise ValueError(
-                f"Обнаружена циклическая зависимость задач. "
-                f"Необработанные задачи: {unprocessed}"
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=400,
+                detail=f"Обнаружена циклическая зависимость задач. "
+                       f"Необработанные задачи: {unprocessed}"
             )
 
         if not ef:

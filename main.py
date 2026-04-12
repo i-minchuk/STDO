@@ -9,17 +9,35 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from config import Config
 from core.service_locator import init_locator, get_locator
+from core.rate_limiter import limiter
+
+# Initialize Sentry if DSN is configured
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.logging import LoggingIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+    
+    sentry_dsn = os.getenv("SENTRY_DSN")
+    if sentry_dsn:
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            integrations=[
+                StarletteIntegration(),
+                LoggingIntegration(),
+            ],
+            traces_sample_rate=0.1,
+            profiles_sample_rate=0.1,
+            environment=os.getenv("SENTRY_ENVIRONMENT", "production"),
+        )
+except ImportError:
+    pass  # Sentry not installed, errors won't be reported
 
 logger = logging.getLogger("ДокПоток IRIS")
-
-# Rate limiter configuration: 100 requests per minute per IP
-limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 
 
 @asynccontextmanager
@@ -32,15 +50,27 @@ async def lifespan(app: FastAPI):
 
     # Run database migrations before initializing the app
     from db.migrations_runner import run_migrations
-    run_migrations()
+    try:
+        run_migrations()
+    except Exception as e:
+        logger.error("Failed to run database migrations: %s", str(e))
+        raise
 
-    init_locator(cfg)
+    try:
+        init_locator(cfg)
+    except Exception as e:
+        logger.error("Failed to initialize service locator: %s", str(e))
+        raise
+    
     logger.info("ДокПоток IRIS v0.3.0 started")
     try:
         yield
     finally:
-        get_locator().db.close()
-        logger.info("ДокПоток IRIS stopped")
+        try:
+            get_locator().db.close()
+            logger.info("ДокПоток IRIS stopped")
+        except Exception as e:
+            logger.error("Error closing database: %s", str(e))
 
 
 app = FastAPI(
@@ -85,6 +115,7 @@ from api.reports_api import router as reports_router
 from api.vdr_mdr_api import router as vdr_mdr_router
 from api.admin_api import router as admin_router
 from api.heatmap_api import router as heatmap_router
+from api.health_api import router as health_router
 
 app.include_router(auth_router)
 app.include_router(project_router)
@@ -103,6 +134,7 @@ app.include_router(reports_router)
 app.include_router(vdr_mdr_router)
 app.include_router(admin_router)
 app.include_router(heatmap_router)
+app.include_router(health_router)
 
 # --- Serve frontend build (Vite) ---
 
@@ -127,6 +159,12 @@ if os.path.isdir(FRONTEND_DIST):
         return {"error": "Frontend build not found"}
 
 
-@app.get("/health")
-def health():
-    return {"status": "ok", "version": "0.3.0"}
+@app.get("/")
+def root():
+    """Root endpoint - API info."""
+    return {
+        "service": "DokPotok IRIS",
+        "version": "0.3.0",
+        "docs": "/docs",
+        "health": "/api/health",
+    }

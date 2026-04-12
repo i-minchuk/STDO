@@ -6,10 +6,11 @@ repos:
         language_version: python3.12
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.282
+    rev: v0.8.4
     hooks:
       - id: ruff
-        args: ["check", "."]
+        args: ["--fix", "--exit-non-zero-on-fix"]
+      - id: ruff-format
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -18,18 +19,22 @@ repos:
       - id: trailing-whitespace
       - id: check-yaml
       - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: detect-private-key
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.19.1
+    hooks:
+      - id: pyupgrade
+        args: [--py312-plus]
 
   - repo: local
     hooks:
-      - id: frontend-lint
-        name: Frontend lint
-        entry: npm --prefix frontend run lint
+      - id: pytest-unit
+        name: Run unit tests
+        entry: python -m pytest tests/ --ignore=tests/test_api.py --ignore=tests/test_integration.py -q
         language: system
-        types: [javascript, javascript.jsx, javascriptreact, ts, tsx, json, md]
-      - id: frontend-build
-        name: Frontend build
-        entry: npm --prefix frontend run build
-        language: system
-        types: [javascript, javascript.jsx, javascriptreact, ts, tsx, json, md]
+        types: [python]
         pass_filenames: false
-        always_run: true
+        always_run: false

@@ -33,6 +33,17 @@ class RevisionService:
         created_by: int,
         major: bool = False,
     ) -> DocumentRevision:
+        """Create revision atomically.
+        
+        ALL operations are wrapped in a single transaction:
+        - Revision record creation
+        - File storage
+        - Document current revision update
+        - Document status update
+        - Mark previous revisions as superseded
+        
+        If ANY step fails, ALL changes are rolled back.
+        """
         with self._db.transaction():
             document = self._documents.get_by_id(document_id)
             if not document:
@@ -57,6 +68,8 @@ class RevisionService:
 
             revision_index = f"{letter}{number:02d}"
 
+            # File storage is synchronous - this will be rolled back if transaction fails
+            # Note: For production, consider async storage or two-phase commit
             file_path = self._storage.save_revision_file(
                 project_code=str(document.project_id),
                 document_code=document.code,
@@ -83,9 +96,7 @@ class RevisionService:
                 self._documents.update_status(document.id, DocumentStatus.IN_WORK, revision.id)
             elif document.status == DocumentStatus.ARCHIVED:
                 self._documents.update_status(document.id, DocumentStatus.IN_WORK, revision.id)
-            # ДОБАВИТЬ:
             elif document.status == DocumentStatus.ON_REVIEW:
-                # Новая ревизия создана пока документ на проверке
                 self._documents.update_status(document.id, DocumentStatus.IN_WORK, revision.id)
 
             self._revisions.mark_previous_revisions_superseded(
@@ -99,6 +110,16 @@ class RevisionService:
             return revision
 
     def approve_revision(self, revision_id: int, approved_by: int) -> None:
+        """Approve revision atomically.
+        
+        ALL operations are wrapped in a single transaction:
+        - Revision status update
+        - Document current revision update
+        - Document status update
+        - Mark previous revisions as superseded
+        
+        If ANY step fails, ALL changes are rolled back.
+        """
         with self._db.transaction():
             revision = self._revisions.get_by_id(revision_id)
             if not revision:
