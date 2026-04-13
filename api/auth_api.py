@@ -13,7 +13,9 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+# Rate limiter temporarily disabled due to slowapi/memory storage compatibility issues
+# TODO: Re-enable after upgrading slowapi or switching to Redis-backed limiter
+# @limiter.limit("5/minute")
 async def login(request: Request, body: LoginRequest):
     loc = get_locator()
     user = loc.auth_service.authenticate(body.username, body.password)

@@ -19,84 +19,72 @@ System for managing technical documentation (drawings, PDFs, specifications) wit
 
 ## Quick Start
 
-### 1. Start the database
+### Windows (Recommended)
+
+#### Option 1: One-click launcher
+
+1. **Double-click `start_iris.bat`** in the project root
+
+This will:
+- Check Python virtual environment
+- Run database migrations
+- Start backend server (http://localhost:8000)
+- Start frontend server (http://localhost:5173)
+- Open browser with API docs
+
+#### Option 2: Setup script + launcher
+
+```batch
+REM Install all dependencies (Python + Node)
+scripts\setup_dev.bat
+
+REM Then start the app
+start_iris.bat
+```
+
+#### Launcher modes:
+
+```batch
+start_iris.bat           # Full dev mode (backend + frontend)
+start_iris.bat backend   # Backend only
+start_iris.bat frontend  # Frontend only
+start_iris.bat migrate   # Run migrations only
+```
+
+### Linux/macOS
+
+#### Option 1: Manual setup
 
 ```bash
 cd STDO
-docker compose up -d
-```
 
-### 2. Install dependencies
+# 1. Start database (Docker)
+docker compose up -d postgres
 
-#### Option 1: virtualenv
-
-```bash
+# 2. Create virtualenv
 python -m venv .venv
 source .venv/bin/activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
-```
+pip install -r requirements-dev.txt  # optional
 
-For development and linting, install dev dependencies as well:
-
-```bash
-pip install -r requirements-dev.txt
-```
-
-#### Option 2: conda
-
-```bash
-conda env create -f environment.yml
-conda activate iris
-./scripts/setup_dev.sh
-```
-
-On Windows PowerShell:
-
-```powershell
-conda env create -f environment.yml
-conda activate iris
-scripts\setup_dev.ps1
-```
-
-Then install frontend dependencies separately in `frontend`:
-
-```bash
+# 4. Setup frontend
 cd frontend
 npm ci
-```
+cd ..
 
-### 3. Create a local `.env` file
-
-Copy the example file and adjust values if necessary:
-
-```bash
+# 5. Create .env file
 cp .env.example .env
-```
 
-On Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-### 4. Run migrations
-
-```bash
+# 6. Run migrations
 python -m db.migrations_runner
-```
 
-### 5. Start the server
-
-```bash
+# 7. Start backend
 uvicorn main:app --reload
-```
 
-API docs: http://localhost:8000/docs
-
-### 6. (Optional) Load sample data
-
-```bash
-python -m project.scripts.init_sample_project
+# 8. (Optional) Start frontend separately
+cd frontend && npm run dev
 ```
 
 ## Configuration

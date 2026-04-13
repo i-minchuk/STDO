@@ -3,15 +3,15 @@ type StatusBadgeProps = {
 };
 
 const STATUS_MAP: Record<string, string> = {
-  active: "bg-blue-100 text-blue-700",
-  archived: "bg-gray-100 text-gray-700",
-  completed: "bg-green-100 text-green-700",
-  inprogress: "bg-amber-100 text-amber-700",
-  notstarted: "bg-slate-100 text-slate-700",
-  overdue: "bg-red-100 text-red-700",
-  low: "bg-green-100 text-green-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  high: "bg-red-100 text-red-700",
+  active: "bg-info-100 text-info-700",
+  archived: "bg-secondary-100 text-secondary-700",
+  completed: "bg-success-100 text-success-700",
+  inprogress: "bg-warning-100 text-warning-700",
+  notstarted: "bg-secondary-100 text-secondary-700",
+  overdue: "bg-error-100 text-error-700",
+  low: "bg-success-100 text-success-700",
+  medium: "bg-warning-100 text-warning-700",
+  high: "bg-error-100 text-error-700",
 };
 
 const LABEL_MAP: Record<string, string> = {

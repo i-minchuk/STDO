@@ -16,15 +16,16 @@ class User:
     updated_at: datetime | None = None
 
     @staticmethod
-    def from_row(row: tuple) -> User:
+    def from_row(row: dict) -> User:
+        """Create User from database row dict (psycopg dict_row)."""
         return User(
-            id=row[0],
-            username=row[1],
-            email=row[2],
-            password_hash=row[3],
-            full_name=row[4],
-            role=row[5],
-            is_active=bool(row[6]),
-            created_at=row[7] if len(row) > 7 else None,
-            updated_at=row[8] if len(row) > 8 else None,
+            id=int(row["id"]),
+            username=row["username"],
+            email=row["email"],
+            password_hash=row["password_hash"],
+            full_name=row["full_name"],
+            role=row["role"],
+            is_active=bool(row["is_active"]),
+            created_at=row.get("created_at") or row.get("created_at") or None,
+            updated_at=row.get("updated_at") or row.get("updated_at") or None,
         )

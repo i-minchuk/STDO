@@ -45,6 +45,10 @@ class Config:
         "SECRET_KEY",
         "iris-secret-key-change-in-production",
     ))
+    log_level: str = field(default_factory=lambda: _env_or_default(
+        "IRIS_LOG_LEVEL",
+        "INFO",
+    ))
     
     def __post_init__(self) -> None:
         Path(self.storage_root).mkdir(parents=True, exist_ok=True)

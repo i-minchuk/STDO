@@ -6,7 +6,7 @@ import StatusBadge from '../components/StatusBadge';
 import SPIIndicator from '../components/SPIIndicator';
 import DailyQuestWidget from '../components/DailyQuestWidget';
 import { FolderOpen, AlertTriangle, CheckCircle, Clock, Calendar, ArrowUpRight, TrendingUp, Info } from 'lucide-react';
-import { Card, Button, Badge } from './ui';
+import { Card, Button, Badge } from '../components/ui';
 
 const MOCK_SUMMARY: PortfolioSummary = { total: 5, active: 3, at_risk: 1, completed: 1 };
 const MOCK_PROJECTS: Project[] = [

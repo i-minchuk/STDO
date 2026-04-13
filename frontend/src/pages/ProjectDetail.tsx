@@ -141,19 +141,19 @@ export default function ProjectDetail() {
                 <Tooltip />
                 <Bar dataKey="spi" name="SPI">
                   {engineers.map((e, i) => (
-                    <Cell key={i} fill={e.spi && e.spi >= 0.95 ? '#16a34a' : e.spi && e.spi >= 0.8 ? '#eab308' : '#dc2626'} />
+                    <Cell key={i} fill={e.spi && e.spi >= 0.95 ? 'var(--success)' : e.spi && e.spi >= 0.8 ? 'var(--warning)' : 'var(--error)'} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-bg-card rounded-xl shadow-sm p-6">
             <h2 className="font-semibold mb-3">Критические задачи в зоне риска</h2>
             <div className="space-y-2">
               {tasks.filter(t => t.is_critical && t.status !== 'completed').map(t => (
-                <div key={t.id} className="flex items-center justify-between px-4 py-2 bg-red-50 rounded-lg">
-                  <span className="text-sm font-medium text-red-800">{t.title}</span>
-                  <span className="text-xs text-red-600">{t.engineer} — резерв: {t.slack ?? 0} дн.</span>
+                <div key={t.id} className="flex items-center justify-between px-4 py-2 bg-error-50 rounded-lg">
+                  <span className="text-sm font-medium text-error-800">{t.title}</span>
+                  <span className="text-xs text-error-600">{t.engineer} — резерв: {t.slack ?? 0} дн.</span>
                 </div>
               ))}
             </div>
@@ -166,7 +166,7 @@ export default function ProjectDetail() {
 
 /* ===== Gantt Chart Component ===== */
 function GanttChart({ tasks }: { tasks: Task[] }) {
-  if (tasks.length === 0) return <div className="text-gray-400 text-center py-12">Нет задач для отображения</div>;
+  if (tasks.length === 0) return <div className="text-text-muted text-center py-12">Нет задач для отображения</div>;
 
   const minES = Math.min(...tasks.map(t => t.es ?? 0));
   const maxEF = Math.max(...tasks.map(t => t.ef ?? 1));
@@ -179,24 +179,24 @@ function GanttChart({ tasks }: { tasks: Task[] }) {
   const days = Array.from({ length: totalDays + 1 }, (_, i) => minES + i);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="bg-bg-card rounded-xl shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold">Диаграмма Ганта</h2>
         <div className="flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-1"><span className="w-4 h-3 bg-red-500 rounded inline-block" /> Критический путь</span>
+          <span className="flex items-center gap-1"><span className="w-4 h-3 bg-error rounded inline-block" /> Критический путь</span>
           <span className="flex items-center gap-1"><span className="w-4 h-3 bg-primary-500 rounded inline-block" /> Обычная задача</span>
-          <span className="flex items-center gap-1"><span className="w-4 h-3 bg-green-500 rounded inline-block" /> Завершена</span>
+          <span className="flex items-center gap-1"><span className="w-4 h-3 bg-success rounded inline-block" /> Завершена</span>
         </div>
       </div>
       <div className="overflow-x-auto border rounded-lg">
         <div style={{ minWidth: labelWidth + totalDays * dayWidth + dayWidth }}>
           {/* Header */}
-          <div className="flex border-b bg-gray-50 sticky top-0">
-            <div className="flex-shrink-0 px-3 py-2 text-xs font-medium text-gray-500 border-r" style={{ width: labelWidth }}>
+          <div className="flex border-b bg-bg-page sticky top-0">
+            <div className="flex-shrink-0 px-3 py-2 text-xs font-medium text-text-muted border-r" style={{ width: labelWidth }}>
               Задача
             </div>
             {days.map(d => (
-              <div key={d} className="text-center text-[10px] text-gray-400 py-2 border-r" style={{ width: dayWidth }}>
+              <div key={d} className="text-center text-[10px] text-text-muted py-2 border-r" style={{ width: dayWidth }}>
                 День {d}
               </div>
             ))}
@@ -207,19 +207,19 @@ function GanttChart({ tasks }: { tasks: Task[] }) {
             const es = (t.es ?? 0) - minES;
             const ef = (t.ef ?? 1) - minES;
             const duration = Math.max(ef - es, 0.5);
-            const barColor = t.status === 'completed' ? '#22c55e' : t.is_critical ? '#ef4444' : '#3b82f6';
+            const barColor = t.status === 'completed' ? 'var(--success)' : t.is_critical ? 'var(--error)' : 'var(--primary)';
             const progressWidth = t.percent_complete;
 
             return (
-              <div key={t.id} className="flex items-center border-b hover:bg-gray-50" style={{ height: rowHeight }}>
+              <div key={t.id} className="flex items-center border-b hover:bg-bg-page" style={{ height: rowHeight }}>
                 <div className="flex-shrink-0 px-3 text-xs truncate border-r flex items-center gap-1" style={{ width: labelWidth }}>
-                  {t.is_critical && <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0" />}
+                  {t.is_critical && <span className="w-1.5 h-1.5 bg-error rounded-full flex-shrink-0" />}
                   <span className="truncate">{t.title}</span>
                 </div>
                 <div className="relative flex-1" style={{ height: rowHeight }}>
                   {/* Day grid lines */}
                   {days.map((d, i) => (
-                    <div key={i} className="absolute top-0 bottom-0 border-r border-gray-100" style={{ left: i * dayWidth, width: dayWidth }} />
+                    <div key={i} className="absolute top-0 bottom-0 border-r border-border-light" style={{ left: i * dayWidth, width: dayWidth }} />
                   ))}
                   {/* Bar */}
                   <div
@@ -253,8 +253,10 @@ function GanttChart({ tasks }: { tasks: Task[] }) {
 
 function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
   const colors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-700', green: 'bg-green-50 text-green-700',
-    yellow: 'bg-yellow-50 text-yellow-700', red: 'bg-red-50 text-red-700',
+    blue: 'bg-info-50 text-info-700',
+    green: 'bg-success-50 text-success-700',
+    yellow: 'bg-warning-50 text-warning-700',
+    red: 'bg-error-50 text-error-700',
   };
   return (
     <div className={`rounded-xl p-5 ${colors[color] || colors.blue}`}>

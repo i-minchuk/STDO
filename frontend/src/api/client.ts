@@ -1,9 +1,8 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
-
+// Use relative paths for API requests - Vite proxy handles routing to backend
 const client = axios.create({
-  baseURL: API_BASE,
+  baseURL: '',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -23,7 +22,7 @@ client.interceptors.response.use(
       if (refreshToken && !error.config._retry) {
         error.config._retry = true;
         try {
-          const { data } = await axios.post(`${API_BASE}/api/auth/refresh`, {
+          const { data } = await axios.post('/api/auth/refresh', {
             refresh_token: refreshToken,
           });
           localStorage.setItem('access_token', data.access_token);

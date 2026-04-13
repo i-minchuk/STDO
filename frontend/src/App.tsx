@@ -15,6 +15,7 @@ import ImportExcel from './pages/ImportExcel';
 import Workload from './pages/Workload';
 import TenderAssess from './pages/TenderAssess';
 import Achievements from './pages/Achievements';
+import ColorTest from './pages/ColorTest';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+            <Route path="color-test" element={<ColorTest />} />
           </Route>
         </Routes>
       </AuthProvider>

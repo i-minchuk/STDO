@@ -4,4 +4,76 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-gray-50 text-gray-900 font-sans; }
+/* ============================================
+   СЕМАНТИЧЕСКАЯ ЦВЕТОВАЯ СИСТЕМА
+   Единый источник правды для всех цветов
+   ============================================ */
+:root {
+  /* Фоны */
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  
+  /* Текст */
+  --text-base: #0F172A;
+  --text-muted: #64748B;
+  
+  /* Primary (фиолетовый) */
+  --primary: #7C3AED;
+  --primary-hover: #6D28D9;
+  --primary-light: #A78BFA;
+  
+  /* Secondary ( slate ) */
+  --secondary: #334155;
+  
+  /* Семантические цвета */
+  --success: #4ADE80;
+  --warning: #D97706;
+  --error: #DC2626;
+  --info: #0F766E;
+  
+  /* Границы */
+  --border: #CBD5E1;
+  --border-light: #E2E8F0;
+  
+  /* Ghost состояния */
+  --ghost-bg: transparent;
+  --ghost-text: #475569;
+  --ghost-hover: #F1F5F9;
+}
+
+/* Глобальные стили */
+body {
+  background-color: var(--bg-page);
+  color: var(--text-base);
+}
+
+/* Карточки, панели, таблицы */
+.card, .panel, .table-container {
+  background-color: var(--bg-card);
+  color: var(--text-base);
+}
+
+/* Вторичный текст */
+.text-muted {
+  color: var(--text-muted);
+}
+
+/* Кастомный скроллбар */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-page);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

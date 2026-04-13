@@ -84,5 +84,5 @@ class UserRepository:
         return True
 
     def count(self) -> int:
-        row = self._db.fetch_one("SELECT COUNT(*) FROM users")
-        return row[0] if row else 0
+        row = self._db.fetch_one("SELECT COUNT(*) AS cnt FROM users")
+        return int(row["cnt"]) if row else 0

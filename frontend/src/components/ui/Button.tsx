@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
 }
@@ -18,11 +18,12 @@ export default function Button({
   const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none';
   
   const variants = {
-    primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm shadow-primary-200',
-    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-300',
-    outline: 'border border-gray-300 bg-transparent hover:bg-gray-50 text-gray-700 focus:ring-gray-200',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-600 focus:ring-gray-100',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm shadow-red-200',
+    primary: 'bg-primary text-white hover:bg-primary-hover focus:ring-primary shadow-sm',
+    secondary: 'bg-bg-card text-secondary border border-border hover:bg-ghost-hover focus:ring-border',
+    outline: 'border border-border bg-transparent hover:bg-ghost-hover text-text-base focus:ring-border-light',
+    ghost: 'bg-ghost-bg hover:bg-ghost-hover text-ghost-text focus:ring-border-light',
+    danger: 'bg-error text-white hover:bg-error-700 focus:ring-error shadow-sm',
+    success: 'bg-success text-text-base hover:bg-success-700 focus:ring-success shadow-sm',
   };
 
   const sizes = {

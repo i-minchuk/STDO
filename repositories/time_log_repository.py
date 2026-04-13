@@ -104,17 +104,17 @@ class TimeLogRepository:
 
     def get_hours_by_user_and_project(self, user_id: int, project_id: int, date_from: date, date_to: date) -> float:
         row = self._db.fetch_one(
-            "SELECT COALESCE(SUM(hours), 0) FROM time_logs WHERE user_id = %s AND project_id = %s AND day >= %s AND day <= %s",
+            "SELECT COALESCE(SUM(hours), 0) AS total_hours FROM time_logs WHERE user_id = %s AND project_id = %s AND day >= %s AND day <= %s",
             (user_id, project_id, date_from, date_to)
         )
-        return float(row[0]) if row else 0.0
+        return float(row["total_hours"]) if row else 0.0
 
     def get_hours_by_project(self, project_id: int, date_from: date, date_to: date) -> float:
         row = self._db.fetch_one(
-            "SELECT COALESCE(SUM(hours), 0) FROM time_logs WHERE project_id = %s AND day >= %s AND day <= %s",
+            "SELECT COALESCE(SUM(hours), 0) AS total_hours FROM time_logs WHERE project_id = %s AND day >= %s AND day <= %s",
             (project_id, date_from, date_to)
         )
-        return float(row[0]) if row else 0.0
+        return float(row["total_hours"]) if row else 0.0
 
     @staticmethod
     def _row_to_model(row: dict) -> TimeLog:

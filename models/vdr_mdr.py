@@ -19,12 +19,19 @@ class VDREntry:
     updated_at: datetime
 
     @staticmethod
-    def from_row(row: tuple) -> VDREntry:
+    def from_row(row: dict) -> VDREntry:
         return VDREntry(
-            id=row[0], project_id=row[1], doc_number=row[2], title=row[3],
-            discipline=row[4], responsible_contractor=row[5],
-            latest_revision=row[6], latest_upload_date=row[7],
-            status=row[8], is_auto_filled=row[9], updated_at=row[10],
+            id=int(row["id"]),
+            project_id=int(row["project_id"]),
+            doc_number=row["doc_number"],
+            title=row["title"],
+            discipline=row.get("discipline"),
+            responsible_contractor=row.get("responsible_contractor"),
+            latest_revision=row.get("latest_revision"),
+            latest_upload_date=row.get("latest_upload_date"),
+            status=row.get("status"),
+            is_auto_filled=bool(row.get("is_auto_filled", False)),
+            updated_at=row["updated_at"],
         )
 
 
@@ -43,10 +50,17 @@ class MDREntry:
     updated_at: datetime
 
     @staticmethod
-    def from_row(row: tuple) -> MDREntry:
+    def from_row(row: dict) -> MDREntry:
         return MDREntry(
-            id=row[0], project_id=row[1], doc_number=row[2], title=row[3],
-            discipline=row[4], revision_current=row[5],
-            planned_issue_date=row[6], actual_issue_date=row[7],
-            status=row[8], is_auto_filled=row[9], updated_at=row[10],
+            id=int(row["id"]),
+            project_id=int(row["project_id"]),
+            doc_number=row["doc_number"],
+            title=row["title"],
+            discipline=row.get("discipline"),
+            revision_current=row.get("revision_current"),
+            planned_issue_date=row.get("planned_issue_date"),
+            actual_issue_date=row.get("actual_issue_date"),
+            status=row.get("status"),
+            is_auto_filled=bool(row.get("is_auto_filled", False)),
+            updated_at=row["updated_at"],
         )

@@ -103,7 +103,7 @@ def upgrade() -> None:
     
     # BADGES & COMBO ACHIEVEMENTS
     op.execute("CREATE INDEX IF NOT EXISTS idx_badges_user_awarded ON gamification_badges (user_id, awarded_at DESC)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_combo_user_active ON combo_achievements (user_id, combo_type, expires_at) WHERE expires_at > NOW()")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_combo_user_active ON combo_achievements (user_id, combo_type, expires_at, is_active)")
     
     # TENDERS - Status filtering
     op.execute("CREATE INDEX IF NOT EXISTS idx_tenders_status_created ON tenders (status, created_at DESC)")

@@ -19,7 +19,7 @@ INSERT INTO users (username, email, password_hash, full_name, role)
 VALUES (
     'admin',
     'admin@stdo.local',
-    '$2b$12$LJ3m4ys3Lk0TSwHjWz8wOeFlQSPaGZ5PZFV8MDB97vM5IjMEIJWe',
+    '$2b$12$ASyAFQWhzeIPvtibCbcYruKgZBiKMtkt6u4QZezSjrMz3/FJ6T.c6',
     'Администратор',
     'admin'
 ) ON CONFLICT (username) DO NOTHING;

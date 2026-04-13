@@ -15,8 +15,13 @@ class GamificationBadge:
     metadata: Optional[dict] = None
 
     @staticmethod
-    def from_row(row: tuple) -> GamificationBadge:
+    def from_row(row: dict) -> GamificationBadge:
         return GamificationBadge(
-            id=row[0], user_id=row[1], badge_id=row[2], name=row[3],
-            description=row[4], awarded_at=row[5], metadata=row[6],
+            id=int(row["id"]),
+            user_id=int(row["user_id"]),
+            badge_id=row["badge_id"],
+            name=row["name"],
+            description=row["description"],
+            awarded_at=row["awarded_at"],
+            metadata=row.get("metadata"),
         )

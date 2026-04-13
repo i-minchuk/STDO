@@ -16,13 +16,13 @@ export default function Select({ label, id, options, error, className = '', ...p
   return (
     <div className="space-y-1">
       {label && (
-        <label htmlFor={selectId} className="block text-sm font-medium text-gray-700">
+        <label htmlFor={selectId} className="block text-sm font-medium text-text-base">
           {label}
         </label>
       )}
       <select
         id={selectId}
-        className={`block w-full pl-3 pr-10 py-2 text-base border ${error ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md shadow-sm ${className}`}
+        className={`block w-full pl-3 pr-10 py-2 text-base border ${error ? 'border-error' : 'border-border'} focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md shadow-sm ${className}`}
         {...props}
       >
         {options.map((option) => (
@@ -31,7 +31,7 @@ export default function Select({ label, id, options, error, className = '', ...p
           </option>
         ))}
       </select>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-xs text-error">{error}</p>}
     </div>
   );
 }

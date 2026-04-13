@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iris_backend
+    environment:
+      DB_DSN: postgresql://postgres:Qwerty852@host.docker.internal:5432/iris
+      SECRET_KEY: iris-secret-key-change-in-production
+      IRIS_STORAGE_ROOT: /app/storage
+      IRIS_LOG_LEVEL: DEBUG
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      bash -c "
+        echo 'Waiting for database...' &&
+        sleep 10 &&
+        echo 'Running migrations...' &&
+        python -m db.migrations_runner &&
+        echo 'Starting server...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+

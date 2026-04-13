@@ -20,9 +20,18 @@ class GamificationEvent:
     comment: Optional[str]
 
     @staticmethod
-    def from_row(row: tuple) -> GamificationEvent:
+    def from_row(row: dict) -> GamificationEvent:
         return GamificationEvent(
-            id=row[0], user_id=row[1], project_id=row[2], event_type=row[3],
-            points_delta=row[4], xp_delta=row[5], metadata=row[6], created_at=row[7],
-            action_key=row[8], ref_doc_id=row[9], ref_task_id=row[10], comment=row[11],
+            id=int(row["id"]),
+            user_id=int(row["user_id"]),
+            project_id=int(row["project_id"]) if row.get("project_id") else None,
+            event_type=row["event_type"],
+            points_delta=int(row["points_delta"]),
+            xp_delta=int(row["xp_delta"]),
+            metadata=row.get("metadata", {}),
+            created_at=row["created_at"],
+            action_key=row.get("action_key"),
+            ref_doc_id=int(row["ref_doc_id"]) if row.get("ref_doc_id") else None,
+            ref_task_id=int(row["ref_task_id"]) if row.get("ref_task_id") else None,
+            comment=row.get("comment"),
         )

@@ -16,9 +16,14 @@ class Notification:
     metadata: Optional[dict] = None
 
     @staticmethod
-    def from_row(row: tuple) -> Notification:
+    def from_row(row: dict) -> Notification:
         return Notification(
-            id=row[0], user_id=row[1], type=row[2], title=row[3],
-            message=row[4], is_read=row[5], created_at=row[6],
-            metadata=row[7],
+            id=int(row["id"]),
+            user_id=int(row["user_id"]),
+            type=row["type"],
+            title=row["title"],
+            message=row["message"],
+            is_read=bool(row["is_read"]),
+            created_at=row["created_at"],
+            metadata=row.get("metadata"),
         )

@@ -14,10 +14,14 @@ class RemarkResponse:
     created_at: datetime
 
     @staticmethod
-    def from_row(row: tuple) -> RemarkResponse:
+    def from_row(row: dict) -> RemarkResponse:
         return RemarkResponse(
-            id=row[0], remark_id=row[1], author_id=row[2],
-            author_name=row[3], text=row[4], created_at=row[5],
+            id=int(row["id"]),
+            remark_id=int(row["remark_id"]),
+            author_id=int(row["author_id"]),
+            author_name=row["author_name"],
+            text=row["text"],
+            created_at=row["created_at"],
         )
 
 
@@ -40,11 +44,20 @@ class Remark:
     responses: list[RemarkResponse] = field(default_factory=list)
 
     @staticmethod
-    def from_row(row: tuple) -> Remark:
+    def from_row(row: dict) -> Remark:
         return Remark(
-            id=row[0], project_id=row[1], document_id=row[2],
-            revision_id=row[3], author_id=row[4], author_name=row[5],
-            assignee_id=row[6], assignee_name=row[7], source=row[8],
-            text=row[9], status=row[10], resolution_comment=row[11],
-            created_at=row[12], resolved_at=row[13],
+            id=int(row["id"]),
+            project_id=int(row["project_id"]),
+            document_id=int(row["document_id"]) if row.get("document_id") else None,
+            revision_id=int(row["revision_id"]) if row.get("revision_id") else None,
+            author_id=int(row["author_id"]) if row.get("author_id") else None,
+            author_name=row.get("author_name"),
+            assignee_id=int(row["assignee_id"]) if row.get("assignee_id") else None,
+            assignee_name=row.get("assignee_name"),
+            source=row["source"],
+            text=row["text"],
+            status=row["status"],
+            resolution_comment=row.get("resolution_comment"),
+            created_at=row["created_at"],
+            resolved_at=row.get("resolved_at"),
         )

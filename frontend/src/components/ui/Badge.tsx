@@ -13,12 +13,12 @@ export default function Badge({
   ...props 
 }: BadgeProps) {
   const variants = {
-    gray: 'bg-gray-100 text-gray-700 border-gray-200',
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
-    green: 'bg-green-50 text-green-700 border-green-200',
-    yellow: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    red: 'bg-red-50 text-red-700 border-red-200',
-    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    gray: 'bg-secondary-100 text-secondary-700 border-secondary-200',
+    blue: 'bg-info-100 text-info-700 border-info-200',
+    green: 'bg-success-100 text-success-700 border-success-200',
+    yellow: 'bg-warning-100 text-warning-700 border-warning-200',
+    red: 'bg-error-100 text-error-700 border-error-200',
+    indigo: 'bg-primary-100 text-primary-700 border-primary-200',
   };
 
   return (

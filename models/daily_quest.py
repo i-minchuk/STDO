@@ -20,10 +20,18 @@ class DailyQuest:
     completed_at: Optional[datetime] = None
 
     @staticmethod
-    def from_row(row: tuple) -> DailyQuest:
+    def from_row(row: dict) -> DailyQuest:
         return DailyQuest(
-            id=row[0], user_id=row[1], quest_type=row[2], title=row[3],
-            description=row[4], target_count=row[5], current_count=row[6],
-            reward_points=row[7], reward_xp=row[8], date=row[9],
-            is_completed=row[10], completed_at=row[11],
+            id=int(row["id"]),
+            user_id=int(row["user_id"]),
+            quest_type=row["quest_type"],
+            title=row["title"],
+            description=row["description"],
+            target_count=int(row["target_count"]),
+            current_count=int(row["current_count"]),
+            reward_points=int(row["reward_points"]),
+            reward_xp=int(row["reward_xp"]),
+            date=row["date"],
+            is_completed=bool(row["is_completed"]),
+            completed_at=row.get("completed_at"),
         )

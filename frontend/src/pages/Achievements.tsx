@@ -22,7 +22,7 @@ import {
   Zap,
   Info,
 } from 'lucide-react';
-import { Card, Button, Badge } from './ui';
+import { Card, Button, Badge } from '../components/ui';
 
 interface BadgeProgress {
   badge: BadgeType;

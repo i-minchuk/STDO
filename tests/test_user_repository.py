@@ -20,12 +20,13 @@ class TestUserRepository:
 
     def test_get_by_id(self, repo, mock_db):
         """Test retrieving a user by ID."""
-        mock_db.fetch_one.return_value = (
-            1, "testuser", "test@example.com", "hashed", "Test User",
-            "engineer", True,
-            datetime(2026, 1, 1, tzinfo=timezone.utc),
-            datetime(2026, 1, 1, tzinfo=timezone.utc)
-        )
+        mock_db.fetch_one.return_value = {
+            "id": 1, "username": "testuser", "email": "test@example.com",
+            "password_hash": "hashed", "full_name": "Test User",
+            "role": "engineer", "is_active": True,
+            "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2026, 1, 1, tzinfo=timezone.utc)
+        }
 
         result = repo.get_by_id(1)
 
@@ -43,12 +44,13 @@ class TestUserRepository:
 
     def test_get_by_username(self, repo, mock_db):
         """Test retrieving user by username."""
-        mock_db.fetch_one.return_value = (
-            1, "testuser", "test@example.com", "hashed", "Test User",
-            "engineer", True,
-            datetime(2026, 1, 1, tzinfo=timezone.utc),
-            datetime(2026, 1, 1, tzinfo=timezone.utc)
-        )
+        mock_db.fetch_one.return_value = {
+            "id": 1, "username": "testuser", "email": "test@example.com",
+            "password_hash": "hashed", "full_name": "Test User",
+            "role": "engineer", "is_active": True,
+            "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2026, 1, 1, tzinfo=timezone.utc)
+        }
 
         result = repo.get_by_username("testuser")
 
@@ -57,12 +59,13 @@ class TestUserRepository:
 
     def test_get_by_email(self, repo, mock_db):
         """Test retrieving user by email."""
-        mock_db.fetch_one.return_value = (
-            1, "testuser", "test@example.com", "hashed", "Test User",
-            "engineer", True,
-            datetime(2026, 1, 1, tzinfo=timezone.utc),
-            datetime(2026, 1, 1, tzinfo=timezone.utc)
-        )
+        mock_db.fetch_one.return_value = {
+            "id": 1, "username": "testuser", "email": "test@example.com",
+            "password_hash": "hashed", "full_name": "Test User",
+            "role": "engineer", "is_active": True,
+            "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2026, 1, 1, tzinfo=timezone.utc)
+        }
 
         result = repo.get_by_email("test@example.com")
 
@@ -72,12 +75,13 @@ class TestUserRepository:
     def test_get_all(self, repo, mock_db):
         """Test getting all users."""
         mock_db.fetch_all.return_value = [
-            (
-                1, "user1", "user1@example.com", "hashed", "User 1",
-                "engineer", True,
-                datetime(2026, 1, 1, tzinfo=timezone.utc),
-                datetime(2026, 1, 1, tzinfo=timezone.utc)
-            )
+            {
+                "id": 1, "username": "user1", "email": "user1@example.com",
+                "password_hash": "hashed", "full_name": "User 1",
+                "role": "engineer", "is_active": True,
+                "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "updated_at": datetime(2026, 1, 1, tzinfo=timezone.utc)
+            }
         ]
 
         result = repo.get_all()
@@ -87,12 +91,13 @@ class TestUserRepository:
     def test_get_all_active_only(self, repo, mock_db):
         """Test getting only active users."""
         mock_db.fetch_all.return_value = [
-            (
-                1, "user1", "user1@example.com", "hashed", "User 1",
-                "engineer", True,
-                datetime(2026, 1, 1, tzinfo=timezone.utc),
-                datetime(2026, 1, 1, tzinfo=timezone.utc)
-            )
+            {
+                "id": 1, "username": "user1", "email": "user1@example.com",
+                "password_hash": "hashed", "full_name": "User 1",
+                "role": "engineer", "is_active": True,
+                "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "updated_at": datetime(2026, 1, 1, tzinfo=timezone.utc)
+            }
         ]
 
         result = repo.get_all(active_only=True)
@@ -102,12 +107,13 @@ class TestUserRepository:
     def test_get_all_paginated(self, repo, mock_db):
         """Test getting users with pagination."""
         mock_db.fetch_all.return_value = [
-            (
-                1, "user1", "user1@example.com", "hashed", "User 1",
-                "engineer", True,
-                datetime(2026, 1, 1, tzinfo=timezone.utc),
-                datetime(2026, 1, 1, tzinfo=timezone.utc)
-            )
+            {
+                "id": 1, "username": "user1", "email": "user1@example.com",
+                "password_hash": "hashed", "full_name": "User 1",
+                "role": "engineer", "is_active": True,
+                "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "updated_at": datetime(2026, 1, 1, tzinfo=timezone.utc)
+            }
         ]
         mock_db.fetch_one.return_value = {"cnt": 1}
 
@@ -118,12 +124,13 @@ class TestUserRepository:
 
     def test_create(self, repo, mock_db):
         """Test creating a new user."""
-        mock_db.fetch_one.return_value = (
-            2, "newuser", "new@example.com", "hashed", "New User",
-            "engineer", True,
-            datetime(2026, 1, 1, tzinfo=timezone.utc),
-            datetime(2026, 1, 1, tzinfo=timezone.utc)
-        )
+        mock_db.fetch_one.return_value = {
+            "id": 2, "username": "newuser", "email": "new@example.com",
+            "password_hash": "hashed", "full_name": "New User",
+            "role": "engineer", "is_active": True,
+            "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2026, 1, 1, tzinfo=timezone.utc)
+        }
 
         result = repo.create("newuser", "new@example.com", "hashed", "New User", "engineer")
 
@@ -132,12 +139,13 @@ class TestUserRepository:
 
     def test_update(self, repo, mock_db):
         """Test updating a user."""
-        mock_db.fetch_one.return_value = (
-            1, "updateduser", "updated@example.com", "hashed", "Updated User",
-            "manager", True,
-            datetime(2026, 1, 1, tzinfo=timezone.utc),
-            datetime(2026, 1, 15, tzinfo=timezone.utc)
-        )
+        mock_db.fetch_one.return_value = {
+            "id": 1, "username": "updateduser", "email": "updated@example.com",
+            "password_hash": "hashed", "full_name": "Updated User",
+            "role": "manager", "is_active": True,
+            "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2026, 1, 15, tzinfo=timezone.utc)
+        }
 
         result = repo.update(1, username="updateduser", role="manager")
 
@@ -155,7 +163,7 @@ class TestUserRepository:
 
     def test_count(self, repo, mock_db):
         """Test counting users."""
-        mock_db.fetch_one.return_value = [10]
+        mock_db.fetch_one.return_value = {"cnt": 10}
 
         result = repo.count()
 

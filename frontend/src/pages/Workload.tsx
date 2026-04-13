@@ -89,45 +89,45 @@ export default function Workload() {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="Оставшиеся часы" fill="#ef4444" stackId="a" />
-            <Bar dataKey="Свободные часы" fill="#22c55e" stackId="a" />
+            <Bar dataKey="Оставшиеся часы" fill="var(--error)" stackId="a" />
+            <Bar dataKey="Свободные часы" fill="var(--success)" stackId="a" />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-bg-card rounded-xl shadow-sm overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-bg-page border-b border-border">
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Инженер</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Статус</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Активные задачи</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Просрочены</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Загрузка</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Свободные часы</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-text-muted uppercase">Инженер</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-text-muted uppercase">Статус</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-text-muted uppercase">Активные задачи</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-text-muted uppercase">Просрочены</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-text-muted uppercase">Загрузка</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-text-muted uppercase">Свободные часы</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border-light">
             {data.engineers.map(e => {
               const cfg = STATUS_CONFIG[e.status];
               return (
-                <tr key={e.engineer} className="hover:bg-gray-50">
+                <tr key={e.engineer} className="hover:bg-bg-page">
                   <td className="px-6 py-4 font-medium">{e.engineer}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.color}`}>{cfg.label}</span>
                   </td>
                   <td className="px-6 py-4 text-sm">{e.active_tasks}</td>
-                  <td className="px-6 py-4 text-sm">{e.overdue_tasks > 0 ? <span className="text-red-600 font-medium">{e.overdue_tasks}</span> : '0'}</td>
+                  <td className="px-6 py-4 text-sm">{e.overdue_tasks > 0 ? <span className="text-error font-medium">{e.overdue_tasks}</span> : '0'}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
-                        <div className={`h-2 rounded-full ${e.utilization_pct > 90 ? 'bg-red-500' : e.utilization_pct > 70 ? 'bg-yellow-500' : 'bg-green-500'}`} style={{ width: `${Math.min(e.utilization_pct, 100)}%` }} />
+                      <div className="w-24 bg-border rounded-full h-2">
+                        <div className={`h-2 rounded-full ${e.utilization_pct > 90 ? 'bg-error' : e.utilization_pct > 70 ? 'bg-warning' : 'bg-success'}`} style={{ width: `${Math.min(e.utilization_pct, 100)}%` }} />
                       </div>
-                      <span className="text-sm text-gray-600">{e.utilization_pct}%</span>
+                      <span className="text-sm text-text-muted">{e.utilization_pct}%</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-green-600">{e.free_hours} ч</td>
+                  <td className="px-6 py-4 text-sm font-medium text-success-700">{e.free_hours} ч</td>
                 </tr>
               );
             })}

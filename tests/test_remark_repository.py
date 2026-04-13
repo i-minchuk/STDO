@@ -22,11 +22,12 @@ class TestRemarkRepository:
         """Test getting remarks for a project."""
         mock_db.fetch_all.side_effect = [
             [  # Main query
-                (
-                    1, 1, None, None, 1, "Author", 2, "Assignee",
-                    "internal", "Test remark", "open", None,
-                    datetime(2026, 1, 1, tzinfo=timezone.utc), None
-                )
+                {
+                    "id": 1, "project_id": 1, "document_id": None, "revision_id": None,
+                    "author_id": 1, "author_name": "Author", "assignee_id": 2, "assignee_name": "Assignee",
+                    "source": "internal", "text": "Test remark", "status": "open", "resolution_comment": None,
+                    "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc), "resolved_at": None
+                }
             ],
             []  # Responses query
         ]
@@ -57,10 +58,10 @@ class TestRemarkRepository:
     def test_get_responses(self, repo, mock_db):
         """Test getting responses for a remark."""
         mock_db.fetch_all.return_value = [
-            (
-                1, 1, 2, "Responder", "Response text",
-                datetime(2026, 1, 1, tzinfo=timezone.utc)
-            )
+            {
+                "id": 1, "remark_id": 1, "author_id": 2, "author_name": "Responder",
+                "text": "Response text", "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc)
+            }
         ]
 
         result = repo.get_responses(1)
@@ -70,11 +71,12 @@ class TestRemarkRepository:
 
     def test_create(self, repo, mock_db):
         """Test creating a new remark."""
-        mock_db.fetch_one.return_value = (
-            1, 1, None, None, 1, "Author", None, "Assignee",
-            "internal", "New remark", "open", None,
-            datetime(2026, 1, 1, tzinfo=timezone.utc), None
-        )
+        mock_db.fetch_one.return_value = {
+            "id": 1, "project_id": 1, "document_id": None, "revision_id": None,
+            "author_id": 1, "author_name": "Author", "assignee_id": None, "assignee_name": "Assignee",
+            "source": "internal", "text": "New remark", "status": "open", "resolution_comment": None,
+            "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc), "resolved_at": None
+        }
 
         result = repo.create(1, "New remark", 1, document_id=None, assignee_id=None, source="internal")
 
@@ -86,12 +88,13 @@ class TestRemarkRepository:
         """Test updating remark status."""
         mock_db.execute.return_value = None
         mock_db.fetch_all.return_value = [
-            (
-                1, 1, None, None, 1, "Author", None, None,
-                "internal", "Test remark", "resolved", "Fixed",
-                datetime(2026, 1, 1, tzinfo=timezone.utc),
-                datetime(2026, 1, 15, tzinfo=timezone.utc)
-            )
+            {
+                "id": 1, "project_id": 1, "document_id": None, "revision_id": None,
+                "author_id": 1, "author_name": "Author", "assignee_id": None, "assignee_name": None,
+                "source": "internal", "text": "Test remark", "status": "resolved", "resolution_comment": "Fixed",
+                "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "resolved_at": datetime(2026, 1, 15, tzinfo=timezone.utc)
+            }
         ]
 
         result = repo.update_status(1, "resolved", "Fixed")
@@ -103,11 +106,12 @@ class TestRemarkRepository:
         """Test updating remark status to open."""
         mock_db.execute.return_value = None
         mock_db.fetch_all.return_value = [
-            (
-                1, 1, None, None, 1, "Author", None, None,
-                "internal", "Test remark", "open", None,
-                datetime(2026, 1, 1, tzinfo=timezone.utc), None
-            )
+            {
+                "id": 1, "project_id": 1, "document_id": None, "revision_id": None,
+                "author_id": 1, "author_name": "Author", "assignee_id": None, "assignee_name": None,
+                "source": "internal", "text": "Test remark", "status": "open", "resolution_comment": None,
+                "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc), "resolved_at": None
+            }
         ]
 
         result = repo.update_status(1, "open", None)
@@ -118,10 +122,10 @@ class TestRemarkRepository:
 
     def test_add_response(self, repo, mock_db):
         """Test adding a response to a remark."""
-        mock_db.fetch_one.return_value = (
-            1, 1, 2, "Responder", "Response text",
-            datetime(2026, 1, 1, tzinfo=timezone.utc)
-        )
+        mock_db.fetch_one.return_value = {
+            "id": 1, "remark_id": 1, "author_id": 2, "author_name": "Responder",
+            "text": "Response text", "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc)
+        }
 
         result = repo.add_response(1, 2, "Response text")
 
