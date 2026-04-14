@@ -24,8 +24,8 @@ export default function Breadcrumbs() {
   if (pathnames.length === 0) return null;
 
   return (
-    <nav className="flex items-center space-x-2 text-sm text-gray-500">
-      <Link to="/dashboard" className="hover:text-primary-600 transition-colors">
+    <nav className="flex items-center space-x-2 text-sm text-[var(--text-muted)]">
+      <Link to="/dashboard" className="hover:text-[var(--primary)] transition-colors">
         <Home size={16} />
       </Link>
       {pathnames.map((value, index) => {
@@ -35,13 +35,13 @@ export default function Breadcrumbs() {
 
         return (
           <div key={to} className="flex items-center space-x-2">
-            <ChevronRight size={14} className="text-gray-400" />
+            <ChevronRight size={14} className="text-[var(--border)]" />
             {last ? (
-              <span className="font-medium text-gray-900 truncate max-w-[200px]">
+              <span className="font-medium text-[var(--text-base)] truncate max-w-[200px]">
                 {label}
               </span>
             ) : (
-              <Link to={to} className="hover:text-primary-600 transition-colors">
+              <Link to={to} className="hover:text-[var(--primary)] transition-colors">
                 {label}
               </Link>
             )}

@@ -42,6 +42,8 @@ export interface Document {
   status: string;
   doc_type: string;
   current_revision_id: number | null;
+  discipline?: string;
+  created_at?: string | null;
 }
 
 export interface Revision {

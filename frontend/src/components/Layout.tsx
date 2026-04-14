@@ -1,13 +1,11 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, FileText, ListTodo, Trophy, UserCircle,
-  Users, LogOut, Menu, X, BarChart3, Upload, ClipboardCheck, Award, ChevronLeft, ChevronRight
+  Briefcase, Users, Factory, FileText, CheckCircle, Shield,
+  Bell, Sun, Moon, LogOut, ChevronDown, Search, Menu, X
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import NotificationBell from './NotificationBell';
-import Breadcrumbs from './Breadcrumbs';
-import { Button, Badge } from './ui';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Администратор',
@@ -16,141 +14,331 @@ const ROLE_LABELS: Record<string, string> = {
   norm_controller: 'Нормоконтролёр',
 };
 
-const NAV_GROUPS = [
+// 6 основных разделов системы
+const MAIN_SECTIONS = [
   {
-    title: 'Основное',
-    items: [
-      { to: '/dashboard', icon: LayoutDashboard, label: 'Дашборд' },
-      { to: '/documents', icon: FileText, label: 'Документы' },
-      { to: '/tasks', icon: ListTodo, label: 'Задачи' },
-    ],
+    to: '/executive', 
+    label: 'Руководители', 
+    icon: Briefcase, 
+    accent: 'leaders',
+    description: 'KPI, риски, обзор портфеля'
   },
   {
-    title: 'Аналитика и Данные',
-    items: [
-      { to: '/import', icon: Upload, label: 'Импорт Excel' },
-      { to: '/workload', icon: BarChart3, label: 'Загруженность' },
-      { to: '/tender', icon: ClipboardCheck, label: 'Оценка тендера' },
-    ],
+    to: '/engineering', 
+    label: 'Инженерные группы', 
+    icon: Users, 
+    accent: 'engineering',
+    description: 'Документы, задачи, ревизии'
   },
   {
-    title: 'Геймификация',
-    items: [
-      { to: '/achievements', icon: Award, label: 'Достижения' },
-      { to: '/leaderboard', icon: Trophy, label: 'Лидерборд' },
-    ],
+    to: '/production', 
+    label: 'Производство', 
+    icon: Factory, 
+    accent: 'production',
+    description: 'Площадка, акты, контроль'
+  },
+  { 
+    to: '/documents', 
+    label: 'Документооборот', 
+    icon: FileText, 
+    accent: 'docs',
+    description: 'Регистрация, архив, журналы'
+  },
+  { 
+    to: '/approvals', 
+    label: 'Согласования', 
+    icon: CheckCircle, 
+    accent: 'approvals',
+    description: 'Маршруты, очереди, статусы'
+  },
+  { 
+    to: '/audit', 
+    label: 'Аудит и контроль', 
+    icon: Shield, 
+    accent: 'audit',
+    description: 'Traceability, события, доступ'
   },
 ];
 
 export default function Layout() {
   const { user, isDemo, logout } = useAuth();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const location = useLocation();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Загрузка темы при монтировании
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('iris-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+    setIsDarkMode(isDark);
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  }, []);
+
+  // Переключение темы
+  const toggleTheme = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    localStorage.setItem('iris-theme', newMode ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', newMode ? 'dark' : 'light');
+  };
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
+  // Получение активного раздела
+  const getActiveSection = () => {
+    const pathname = location.pathname;
+    const section = MAIN_SECTIONS.find(s => pathname.startsWith(s.to));
+    return section?.accent || 'leaders';
+  };
+
+  const activeAccent = getActiveSection();
+
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      {/* SIDEBAR */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 text-white flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 z-50 shadow-xl`}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-800 h-16">
-          {sidebarOpen ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent tracking-tight">СТДО</span>
-              {isDemo && <Badge variant="yellow" className="text-[9px] h-4">ДЕМО</Badge>}
+    <div className="flex flex-col h-screen bg-[var(--bg-app)] transition-colors duration-300">
+      {/* TOP NAVIGATION BAR */}
+      <header className="topbar flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden topbar-action"
+            style={{ color: 'var(--topbar-icon)' }}
+            aria-label="Меню"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          
+          <div className="topbar-brand" style={{ color: 'var(--text-inverse)' }}>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center font-bold text-white">
+              IRIS
+            </div>
+            <span className="hidden sm:inline font-semibold" style={{ color: 'var(--text-inverse)' }}>ДокПоток IRIS</span>
+            {isDemo && (
+              <span className="px-2 py-0.5 text-[10px] font-bold bg-[var(--accent-approvals)] text-[var(--text-inverse)] rounded">
+                ДЕМО
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Поиск */}
+        <div className="flex-1 max-w-xl mx-8">
+          {searchOpen ? (
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Поиск документов, проектов, задач..."
+                className="input w-full pl-10 pr-4 py-2"
+                style={{ 
+                  backgroundColor: 'var(--bg-topbar-hover)', 
+                  borderColor: 'var(--border-dark)',
+                  color: 'var(--text-inverse)',
+                  '--tw-placeholder-color': 'var(--text-tertiary)' as any
+                }}
+                autoFocus
+                onBlur={() => setSearchOpen(false)}
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--topbar-icon)' }} size={18} />
             </div>
           ) : (
-            <span className="w-full text-center text-primary-400 font-bold">ST</span>
-          )}
-        </div>
-
-        <nav className="flex-1 py-6 overflow-y-auto custom-scrollbar">
-          {NAV_GROUPS.map((group, idx) => (
-            <div key={idx} className="mb-6 px-3">
-              {sidebarOpen && <div className="px-3 mb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{group.title}</div>}
-              <div className="space-y-1">
-                {group.items.map(({ to, icon: Icon, label }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    className={({ isActive }) =>
-                      `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
-                        isActive 
-                        ? 'bg-primary-600 text-white shadow-lg shadow-primary-900/50' 
-                        : 'text-gray-400 hover:bg-gray-800/50 hover:text-white'
-                      }`
-                    }
-                  >
-                    <Icon size={sidebarOpen ? 18 : 20} className={sidebarOpen ? '' : 'mx-auto'} />
-                    {sidebarOpen && <span className="font-medium">{label}</span>}
-                  </NavLink>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {user?.role === 'admin' && (
-            <div className="px-3">
-              {sidebarOpen && <div className="px-3 mb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Админ</div>}
-              <NavLink
-                to="/admin/users"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                    isActive ? 'bg-primary-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white'
-                  }`
-                }
-              >
-                <Users size={sidebarOpen ? 18 : 20} className={sidebarOpen ? '' : 'mx-auto'} />
-                {sidebarOpen && <span className="font-medium">Пользователи</span>}
-              </NavLink>
-            </div>
-          )}
-        </nav>
-
-        <div className="p-4 border-t border-gray-800">
-          <button onClick={handleLogout} className="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-red-950/20 hover:text-red-400 transition-all text-sm w-full">
-            <LogOut size={18} className={sidebarOpen ? '' : 'mx-auto'} />
-            {sidebarOpen && <span className="font-medium">Выйти</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* HEADER */}
-        <header className="h-16 bg-white border-b border-gray-200 px-6 flex justify-between items-center z-40 sticky top-0">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setSidebarOpen(!sidebarOpen)} 
-              className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors shadow-sm"
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="topbar-action w-full flex items-center gap-3 px-4 py-2 rounded-md"
+              style={{ 
+                backgroundColor: 'var(--bg-topbar-hover)',
+                color: 'var(--topbar-icon)'
+              }}
             >
-              {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+              <Search size={18} />
+              <span className="text-sm">Поиск...</span>
             </button>
-            <Breadcrumbs />
+          )}
+        </div>
+
+        {/* Правая часть */}
+        <div className="flex items-center gap-2">
+          {/* Переключатель темы */}
+          <button
+            onClick={toggleTheme}
+            className="topbar-action"
+            style={{ color: 'var(--topbar-icon)' }}
+            aria-label={isDarkMode ? 'Светлый режим' : 'Тёмный режим'}
+            title={isDarkMode ? 'Светлый режим' : 'Тёмный режим'}
+          >
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+
+          {/* Уведомления */}
+          <div className="relative">
+            <button
+              className="topbar-action"
+              style={{ color: 'var(--notification-icon)' }}
+              aria-label="Уведомления"
+              title="Уведомления"
+              onClick={() => navigate('/profile')}
+            >
+              <Bell size={20} />
+              <span 
+                className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: 'var(--notification-badge)' }}
+              />
+            </button>
           </div>
 
-          <div className="flex items-center gap-6">
-            <NotificationBell onNotificationClick={() => navigate('/profile')} />
-            <div className="h-8 w-px bg-gray-200"></div>
-            <NavLink to="/profile" className="flex items-center gap-3 group">
-              <div className="text-right hidden sm:block">
-                <div className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">{user?.full_name}</div>
-                <div className="text-xs text-gray-500">{ROLE_LABELS[user?.role || ''] || user?.role}</div>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-primary-100 border-2 border-white shadow-sm flex items-center justify-center text-primary-700 font-bold group-hover:border-primary-200 transition-all">
+          {/* Профиль */}
+          <div className="relative">
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-[var(--bg-topbar-hover)] transition-colors"
+            >
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm"
+                style={{ 
+                  backgroundColor: 'var(--primary-light)',
+                  color: 'var(--primary)'
+                }}
+              >
                 {user?.full_name?.[0] || 'U'}
               </div>
-            </NavLink>
-          </div>
-        </header>
+              <div className="hidden md:block text-left">
+                <div className="text-sm font-medium" style={{ color: 'var(--text-inverse)' }}>
+                  {user?.full_name || 'Пользователь'}
+                </div>
+                <div className="text-xs" style={{ color: 'var(--topbar-icon)' }}>
+                  {ROLE_LABELS[user?.role || ''] || user?.role}
+                </div>
+              </div>
+              <ChevronDown size={16} style={{ color: 'var(--topbar-icon)' }} />
+            </button>
 
-        {/* PAGE CONTENT */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar">
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
+            {userMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setUserMenuOpen(false)}
+                />
+                <div 
+                  className="absolute right-0 mt-2 w-56 rounded-lg shadow-xl border z-50 py-1"
+                  style={{ 
+                    backgroundColor: 'var(--bg-surface)',
+                    borderColor: 'var(--border-default)'
+                  }}
+                >
+                  <NavLink
+                    to="/profile"
+                    className="block px-4 py-2 text-sm hover:bg-[var(--bg-hover)]"
+                    style={{ color: 'var(--text-primary)' }}
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    Профиль
+                  </NavLink>
+                  <NavLink
+                    to="/settings"
+                    className="block px-4 py-2 text-sm hover:bg-[var(--bg-hover)]"
+                    style={{ color: 'var(--text-primary)' }}
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    Настройки
+                  </NavLink>
+                  {user?.role === 'admin' && (
+                    <NavLink
+                      to="/admin/users"
+                      className="block px-4 py-2 text-sm hover:bg-[var(--bg-hover)]"
+                      style={{ color: 'var(--text-primary)' }}
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Администрирование
+                    </NavLink>
+                  )}
+                  <hr className="my-1" style={{ borderColor: 'var(--border-light)' }} />
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm flex items-center gap-2"
+                    style={{ color: 'var(--error)' }}
+                  >
+                    <LogOut size={16} />
+                    Выйти
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        </main>
-      </div>
+        </div>
+      </header>
+
+      {/* MAIN SECTIONS TABS */}
+      <nav 
+        className="border-b flex-shrink-0"
+        style={{ 
+          backgroundColor: 'var(--bg-surface)',
+          borderColor: 'var(--border-default)'
+        }}
+      >
+        <div className="max-w-[1920px] mx-auto px-4">
+          <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar">
+            {MAIN_SECTIONS.map((section) => {
+              const Icon = section.icon;
+              const isActive = location.pathname.startsWith(section.to);
+              
+              return (
+                <NavLink
+                  key={section.to}
+                  to={section.to}
+                  className={`section-tab section-tab-${section.accent} flex items-center gap-2 whitespace-nowrap ${
+                    isActive ? 'active' : ''
+                  }`}
+                  title={section.description}
+                >
+                  <Icon size={16} />
+                  <span className="hidden lg:inline">{section.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
+      {/* MOBILE MENU */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 pt-16" style={{ backgroundColor: 'var(--bg-app)' }}>
+          <nav className="p-4 space-y-2">
+            {MAIN_SECTIONS.map((section) => {
+              const Icon = section.icon;
+              const isActive = location.pathname.startsWith(section.to);
+              
+              return (
+                <NavLink
+                  key={section.to}
+                  to={section.to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive
+                      ? `bg-[var(--accent-${section.accent}-light)]`
+                      : 'hover:bg-[var(--bg-hover)]'
+                  }`}
+                  style={{ color: isActive ? `var(--accent-${section.accent})` : 'var(--text-primary)' }}
+                >
+                  <Icon size={20} />
+                  <div>
+                    <div className="font-medium">{section.label}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{section.description}</div>
+                  </div>
+                </NavLink>
+              );
+            })}
+          </nav>
+        </div>
+      )}
+
+      {/* PAGE CONTENT */}
+      <main className="flex-1 overflow-auto custom-scrollbar">
+        <div className="max-w-[1920px] mx-auto p-4 lg:p-6">
+          <Outlet />
+        </div>
+      </main>
     </div>
   );
 }

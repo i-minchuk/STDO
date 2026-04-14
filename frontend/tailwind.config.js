@@ -6,12 +6,12 @@ export default {
       fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
       colors: {
         // Фоны
-        'bg-page': 'var(--bg-page)',
-        'bg-card': 'var(--bg-card)',
+        'bg-page': 'var(--bg-app)',
+        'bg-card': 'var(--bg-surface)',
         
-        // Текст
-        'text-base': 'var(--text-base)',
-        'text-muted': 'var(--text-muted)',
+        // Текст - используем CSS переменные
+        'text-base': 'var(--text-primary)',
+        'text-muted': 'var(--text-secondary)',
         
         // Primary (фиолетовый)
         primary: {
@@ -32,7 +32,7 @@ export default {
         
         // Secondary (slate)
         secondary: {
-          DEFAULT: 'var(--secondary)',
+          DEFAULT: 'var(--text-secondary)',
           50: '#F8FAFC',
           100: '#F1F5F9',
           200: '#E2E8F0',
@@ -101,7 +101,7 @@ export default {
         
         // Границы
         border: {
-          DEFAULT: 'var(--border)',
+          DEFAULT: 'var(--border-default)',
           light: 'var(--border-light)',
         },
         

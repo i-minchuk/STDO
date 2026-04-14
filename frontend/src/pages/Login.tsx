@@ -39,7 +39,7 @@ export default function Login() {
       <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
         <div className="flex items-center justify-center gap-3 mb-8">
           <FileText className="text-primary-600" size={36} />
-          <h1 className="text-2xl font-bold text-gray-900">STDO</h1>
+          <h1 className="text-2xl font-bold text-gray-900">ДокПоток IRIS</h1>
         </div>
         <p className="text-center text-gray-500 mb-6 text-sm">
           Система учёта технической документации

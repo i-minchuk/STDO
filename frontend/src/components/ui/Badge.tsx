@@ -1,34 +1,40 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 
-interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'indigo';
+interface BadgeProps {
+  variant?: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'leaders' | 'engineering' | 'production' | 'docs' | 'approvals' | 'audit';
+  children: ReactNode;
+  className?: string;
+  leftIcon?: ReactNode;
   dot?: boolean;
 }
 
 export default function Badge({ 
   children, 
-  variant = 'gray', 
-  dot = false,
+  variant = 'neutral',
   className = '', 
-  ...props 
+  leftIcon,
+  dot = false
 }: BadgeProps) {
   const variants = {
-    gray: 'bg-secondary-100 text-secondary-700 border-secondary-200',
-    blue: 'bg-info-100 text-info-700 border-info-200',
-    green: 'bg-success-100 text-success-700 border-success-200',
-    yellow: 'bg-warning-100 text-warning-700 border-warning-200',
-    red: 'bg-error-100 text-error-700 border-error-200',
-    indigo: 'bg-primary-100 text-primary-700 border-primary-200',
+    success: 'bg-[var(--success-light)] text-[var(--success)]',
+    warning: 'bg-[var(--warning-light)] text-[var(--warning)]',
+    error: 'bg-[var(--error-light)] text-[var(--error)]',
+    info: 'bg-[var(--info-light)] text-[var(--info)]',
+    neutral: 'bg-[var(--bg-hover)] text-[var(--text-secondary)]',
+    leaders: 'bg-[var(--accent-leaders-light)] text-[var(--accent-leaders)]',
+    engineering: 'bg-[var(--accent-engineering-light)] text-[var(--accent-engineering)]',
+    production: 'bg-[var(--accent-production-light)] text-[var(--accent-production)]',
+    docs: 'bg-[var(--accent-docs-light)] text-[var(--accent-docs)]',
+    approvals: 'bg-[var(--accent-approvals-light)] text-[var(--accent-approvals)]',
+    audit: 'bg-[var(--accent-audit-light)] text-[var(--accent-audit)]',
   };
 
   return (
     <span 
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${variants[variant]} ${className}`}
-      {...props}
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${variants[variant]} ${className}`}
     >
-      {dot && (
-        <span className={`mr-1.5 h-1.5 w-1.5 rounded-full fill-current`} />
-      )}
+      {dot && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
+      {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
       {children}
     </span>
   );

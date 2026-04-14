@@ -1,79 +1,747 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================
-   СЕМАНТИЧЕСКАЯ ЦВЕТОВАЯ СИСТЕМА
-   Единый источник правды для всех цветов
+   OBSIDIAN VIOLET DESIGN SYSTEM
+   Enterprise UI для STDO/EDMS
+   ============================================ */
+
+/* ============================================
+   LIGHT MODE (DEFAULT)
    ============================================ */
 :root {
-  /* Фоны */
-  --bg-page: #F8FAFC;
-  --bg-card: #FFFFFF;
+  /* === BASE BACKGROUNDS === */
+  --bg-app: #F5F7FA;           /* Холодный светлый серо-голубой */
+  --bg-surface: #FFFFFF;        /* Белые панели */
+  --bg-surface-2: #F8FAFC;      /* Вторичный фон */
+  --bg-hover: #F1F5F9;          /* Ховер состояния */
+  --bg-selected: #E2E8F0;       /* Выбранные элементы */
   
-  /* Текст */
-  --text-base: #0F172A;
-  --text-muted: #64748B;
+  /* === TOP BAR - OBSIDIAN === */
+  --bg-topbar: rgb(29, 40, 63);         /* Глубокий obsidian/navy */
+  --bg-topbar-hover: #111827;
   
-  /* Primary (фиолетовый) */
+  /* === PRIMARY - PREMIUM VIOLET === */
+  --primary: #7C3AED;           /* Фиолетовый premium accent */
+  --primary-hover: #6D28D9;
+  --primary-light: #EDE9FE;
+  --primary-dark: #5B21B6;
+  
+  /* === SECTION ACCENTS === */
+  /* Руководители / Портфель */
+  --accent-leaders: #8B5CF6;    /* Premium violet */
+  --accent-leaders-light: #F5F3FF;
+  
+  /* Инженерные группы */
+  --accent-engineering: #0D9488; /* Deep teal */
+  --accent-engineering-light: #F0FDFA;
+  
+  /* Производство */
+  --accent-production: #f18204;  /* Copper / amber-brown */
+  --accent-production-light: #f1a90d;
+  
+  /* Документооборот */
+  --accent-docs: #2563EB;        /* Cobalt blue */
+  --accent-docs-light: #EFF6FF;
+  
+  /* Согласования */
+  --accent-approvals: #FBBF24;   /* Чистый дорогой yellow */
+  --accent-approvals-light: #FFFBEB;
+  
+  /* Аудит и контроль */
+  --accent-audit: #DC2626;       /* Ruby / crimson */
+  --accent-audit-light: #FEF2F2;
+  
+  /* === SEMANTIC COLORS === */
+  --success: #059669;            /* Изумрудный */
+  --success-light: #ECFDF5;
+  --warning: #D97706;            /* Янтарный */
+  --warning-light: #FFFBEB;
+  --error: #DC2626;              /* Красный */
+  --error-light: #FEF2F2;
+  --info: #0284C7;               /* Синий */
+  --info-light: #F0F9FF;
+  
+  /* === TEXT === */
+  --text-primary: #0F172A;       /* Основной текст */
+  --text-secondary: #475569;     /* Вторичный текст */
+  --text-tertiary: #94A3B8;      /* Третичный текст */
+  --text-disabled: #CBD5E1;      /* Отключённый */
+  --text-inverse: #FFFFFF;       /* Инверсный (на тёмном) */
+  
+  /* === BORDERS === */
+  --border-default: #E2E8F0;
+  --border-light: #F1F5F9;
+  --border-dark: #CBD5E1;
+  --border-focus: #7C3AED;
+  
+  /* === SHADOWS === */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 10px 15px rgba(15, 23, 42, 0.12);
+  --shadow-xl: 0 20px 25px rgba(15, 23, 42, 0.15);
+  
+  /* === RADIUS === */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  
+  /* === SPACING (base 4px) === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  
+  /* === TYPOGRAPHY === */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  
+  /* === TRANSITIONS === */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* ============================================
+   DARK MODE - OPERATIONS THEME
+   ============================================ */
+[data-theme='dark'] {
+  /* === BASE BACKGROUNDS === */
+  --bg-app: #0b1220;             /* Глубокий navy */
+  --bg-surface: #182235;         /* Светлее для панелей */
+  --bg-surface-2: #223049;       /* Вторичный фон */
+  --bg-hover: #F1F5F9;           /* Ховер (усилен для видимости) */
+  --bg-selected: #E2E8F0;        /* Выбранные */
+
+  /* === TOP BAR === */
+  --bg-topbar:rgb(29, 40, 63) ;          /* Почти чёрный */
+  --bg-topbar-hover: #111827;
+  
+  /* === PRIMARY VIOLET (ярче для контраста) === */
   --primary: #7C3AED;
   --primary-hover: #6D28D9;
-  --primary-light: #A78BFA;
+  --primary-light: #EDE9FE;
+  --primary-dark: #5B21B6;
   
-  /* Secondary ( slate ) */
-  --secondary: #334155;
+  /* === SECTION ACCENTS (адаптированы для dark) === */
+  --accent-leaders: #C4B5FD;
+  --accent-leaders-light: #2E1065;
   
-  /* Семантические цвета */
-  --success: #4ADE80;
-  --warning: #D97706;
-  --error: #DC2626;
-  --info: #0F766E;
+  --accent-engineering: #5EEAD4;
+  --accent-engineering-light: #134E4A;
   
-  /* Границы */
-  --border: #CBD5E1;
-  --border-light: #E2E8F0;
+  --accent-production: #FCD34D;
+  --accent-production-light: #451A03;
   
-  /* Ghost состояния */
-  --ghost-bg: transparent;
-  --ghost-text: #475569;
-  --ghost-hover: #F1F5F9;
+  --accent-docs: #60A5FA;
+  --accent-docs-light: #1E3A8A;
+  
+  --accent-approvals: #FDE047;
+  --accent-approvals-light: #422006;
+  
+  --accent-audit: #F87171;
+  --accent-audit-light: #450A0A;
+  
+  /* === SEMANTIC COLORS (усилены для видимости) === */
+  --success: #34D399;
+  --success-light: #064E3B;
+  --warning: #FBBF24;
+  --warning-light: #451A03;
+  --error: #F87171;
+  --error-light: #450A0A;
+  --info: #60A5FA;
+  --info-light: #1E3A8A;
+  
+  /* === TEXT (усилен контраст) === */
+  --text-primary: #F8FAFC;       /* Ярче основной текст */
+  --text-secondary: #D5DEEA;     /* Вторичный - хорошо читается */
+  --text-tertiary: #A5B4C7;      /* Muted - усилен для видимости */
+  --text-disabled: #64748B;      /* Disabled - более заметный */
+  --text-inverse: #0F172A;
+  
+  /* === BORDERS === */
+  --border-default: #334155;
+  --border-light: #1E293B;
+  --border-dark: #64748B;
+  --border-focus: #A78BFA;
+  
+  /* === SHADOWS (темнее) === */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.7);
+
+  /* === TOPBAR ICONS (усилены для видимости) === */
+  --topbar-icon: #D8E1EE;        /* Иконки по умолчанию */
+  --topbar-icon-hover: #FFFFFF;  /* Иконки при hover */
+  --topbar-icon-active: #D8E1EE; /* Активные иконки */
+
+  /* === NOTIFICATION BELL === */
+  --notification-icon: #94A3B8;
+  --notification-icon-hover: #F1F5F9;
+  --notification-badge: #EF4444;
 }
 
-/* Глобальные стили */
+/* ============================================
+   GLOBAL STYLES
+   ============================================ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
-  background-color: var(--bg-page);
-  color: var(--text-base);
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition-slow), color var(--transition-slow);
 }
 
-/* Карточки, панели, таблицы */
-.card, .panel, .table-container {
-  background-color: var(--bg-card);
-  color: var(--text-base);
+/* Моноширинный шрифт для кодов */
+.font-mono {
+  font-family: var(--font-mono);
 }
 
-/* Вторичный текст */
-.text-muted {
-  color: var(--text-muted);
+/* Ссылки */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
-/* Кастомный скроллбар */
+a:hover {
+  color: var(--primary-hover);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Карточки */
+.card {
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-default);
+  padding: var(--space-4);
+  transition: all var(--transition-base);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-elevated {
+  box-shadow: var(--shadow-md);
+}
+
+.card-interactive {
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Кнопки */
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-dark);
+}
+
+/* Бэйджи статусов */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.badge-success {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.badge-warning {
+  background-color: var(--warning-light);
+  color: var(--warning);
+}
+
+.badge-error {
+  background-color: var(--error-light);
+  color: var(--error);
+}
+
+.badge-info {
+  background-color: var(--info-light);
+  color: var(--info);
+}
+
+.badge-neutral {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+/* Section accents badges */
+.badge-leaders {
+  background-color: var(--accent-leaders-light);
+  color: var(--accent-leaders);
+}
+
+.badge-engineering {
+  background-color: var(--accent-engineering-light);
+  color: var(--accent-engineering);
+}
+
+.badge-production {
+  background-color: var(--accent-production-light);
+  color: var(--accent-production);
+}
+
+.badge-docs {
+  background-color: var(--accent-docs-light);
+  color: var(--accent-docs);
+}
+
+.badge-approvals {
+  background-color: var(--accent-approvals-light);
+  color: var(--accent-approvals);
+}
+
+.badge-audit {
+  background-color: var(--accent-audit-light);
+  color: var(--accent-audit);
+}
+
+/* Таблицы */
+.table-container {
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.table-header {
+  background-color: var(--bg-surface-2);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.table-row {
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color var(--transition-fast);
+}
+
+.table-row:hover {
+  background-color: var(--bg-hover);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+/* Инпуты */
+.input {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all var(--transition-fast);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Скроллбары */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: var(--bg-page);
-  border-radius: 3px;
+  background: var(--bg-surface-2);
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: var(--border-dark);
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--text-tertiary);
+}
+
+/* Фокус для доступности */
+*:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   SECTION TABS - COLOR DIVIDERS
+   ============================================ */
+.section-tab {
+  position: relative;
+  padding: var(--space-3) var(--space-4);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border-bottom: 3px solid transparent;
+}
+
+.section-tab:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.section-tab.active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Section accent variants - light mode */
+.section-tab-leaders.active {
+  border-bottom-color: var(--accent-leaders);
+  background-color: var(--accent-leaders-light);
+  color: var(--accent-leaders);
+}
+
+.section-tab-engineering.active {
+  border-bottom-color: var(--accent-engineering);
+  background-color: var(--accent-engineering-light);
+  color: var(--accent-engineering);
+}
+
+.section-tab-production.active {
+  border-bottom-color: var(--accent-production);
+  background-color: var(--accent-production-light);
+  color: var(--accent-production);
+}
+
+.section-tab-docs.active {
+  border-bottom-color: var(--accent-docs);
+  background-color: var(--accent-docs-light);
+  color: var(--accent-docs);
+}
+
+.section-tab-approvals.active {
+  border-bottom-color: var(--accent-approvals);
+  background-color: var(--accent-approvals-light);
+  color: var(--accent-approvals);
+}
+
+.section-tab-audit.active {
+  border-bottom-color: var(--accent-audit);
+  background-color: var(--accent-audit-light);
+  color: var(--accent-audit);
+}
+
+/* Dark mode adjustments for tabs */
+[data-theme='dark'] .section-tab {
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .section-tab:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+[data-theme='dark'] .section-tab.active {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .section-tab-leaders.active {
+  border-bottom-color: var(--accent-leaders);
+  background-color: var(--accent-leaders-light);
+  color: var(--accent-leaders);
+}
+
+[data-theme='dark'] .section-tab-engineering.active {
+  border-bottom-color: var(--accent-engineering);
+  background-color: var(--accent-engineering-light);
+  color: var(--accent-engineering);
+}
+
+[data-theme='dark'] .section-tab-production.active {
+  border-bottom-color: var(--accent-production);
+  background-color: var(--accent-production-light);
+  color: var(--accent-production);
+}
+
+[data-theme='dark'] .section-tab-docs.active {
+  border-bottom-color: var(--accent-docs);
+  background-color: var(--accent-docs-light);
+  color: var(--accent-docs);
+}
+
+[data-theme='dark'] .section-tab-approvals.active {
+  border-bottom-color: var(--accent-approvals);
+  background-color: var(--accent-approvals-light);
+  color: var(--accent-approvals);
+}
+
+[data-theme='dark'] .section-tab-audit.active {
+  border-bottom-color: var(--accent-audit);
+  background-color: var(--accent-audit-light);
+  color: var(--accent-audit);
+}
+
+/* ============================================
+   KPI CARDS
+   ============================================ */
+.kpi-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.kpi-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: var(--space-2);
+}
+
+.kpi-trend {
+  font-size: 12px;
+  margin-top: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.kpi-trend.positive {
+  color: var(--success);
+}
+
+.kpi-trend.negative {
+  color: var(--error);
+}
+
+/* ============================================
+   TOP NAVIGATION BAR
+   ============================================ */
+.topbar {
+  background-color: var(--bg-topbar);
+  color: var(--text-inverse);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+}
+
+.topbar-brand {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-inverse);
+}
+
+.topbar-brand .brand-text {
+  color: var(--text-inverse);
+}
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.topbar-action {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--topbar-icon, var(--text-tertiary));
+  transition: all var(--transition-fast);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.topbar-action:hover {
+  background-color: var(--bg-topbar-hover);
+  color: var(--topbar-icon-hover, var(--text-inverse));
+}
+
+.topbar-action.active {
+  color: var(--topbar-icon-active, var(--primary));
+}
+
+/* Page headings in dark mode */
+[data-theme='dark'] h1,
+[data-theme='dark'] h2,
+[data-theme='dark'] h3,
+[data-theme='dark'] h4,
+[data-theme='dark'] h5,
+[data-theme='dark'] h6 {
+  color: var(--text-primary);
+}
+
+/* Card headings in dark mode */
+[data-theme='dark'] .card h1,
+[data-theme='dark'] .card h2,
+[data-theme='dark'] .card h3 {
+  color: var(--text-primary);
+}
+
+/* KPI card in dark mode */
+[data-theme='dark'] .kpi-value {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .kpi-label {
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   DENSITY MODES
+   ============================================ */
+.density-compact {
+  --space-component: var(--space-2);
+  font-size: 13px;
+}
+
+.density-normal {
+  --space-component: var(--space-3);
+  font-size: 14px;
+}
+
+.density-comfortable {
+  --space-component: var(--space-4);
+  font-size: 15px;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--transition-base);
+}
+
+.animate-slide-up {
+  animation: slideUp var(--transition-slow);
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
