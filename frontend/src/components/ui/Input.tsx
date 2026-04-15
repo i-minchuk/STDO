@@ -1,31 +1,59 @@
-import React from 'react';
+import type { InputHTMLAttributes } from 'react';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  helpText?: string;
+  className?: string;
 }
 
-export default function Input({ label, id, error, className = '', ...props }: InputProps) {
-  const inputId = id || (label ? `input-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined);
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
+}
+
+export default function Input({
+  label,
+  id,
+  error,
+  helpText,
+  className = '',
+  ...props
+}: InputProps) {
   return (
-    <div className="space-y-1">
-      {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+    <div className={cn('w-full', className)}>
+      {label ? (
+        <label
+          htmlFor={id}
+          className="mb-1 block text-sm font-medium"
+          style={{ color: 'var(--text-primary)' }}
+        >
           {label}
         </label>
-      )}
+      ) : null}
+
       <input
-        id={inputId}
-        className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 sm:text-sm ${className}`}
-        style={{ 
+        id={id}
+        {...props}
+        className={cn(
+          'w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors',
+          error ? 'border-red-500' : ''
+        )}
+        style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: error ? 'var(--error)' : 'var(--border-default)',
           color: 'var(--text-primary)',
-          '--tw-placeholder-color': 'var(--text-tertiary)' as any
         }}
-        {...props}
       />
-      {error && <p className="mt-1 text-xs" style={{ color: 'var(--error)' }}>{error}</p>}
+
+      {error ? (
+        <p className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
+          {error}
+        </p>
+      ) : helpText ? (
+        <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+          {helpText}
+        </p>
+      ) : null}
     </div>
   );
 }

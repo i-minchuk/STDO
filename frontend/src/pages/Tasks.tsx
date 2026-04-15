@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getTodayTasks } from '../api/tasks';
 import type { Task } from '../types';
 import StatusBadge from '../components/StatusBadge';
-import { Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Clock, AlertCircle, } from 'lucide-react';
 
 const MOCK_TASKS: Task[] = [
   { id: 1, project_id: 1, document_id: 1, task_type: 'design', title: 'Разработка КМ-001', status: 'in_progress', planned_start: '2026-03-20', planned_finish: '2026-03-28', planned_hours: 40, actual_hours: 24, percent_complete: 60, engineer: 'Иванов А.А.', is_critical: true, es: 0, ef: 5, ls: 0, lf: 5, slack: 0 },

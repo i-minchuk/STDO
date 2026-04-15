@@ -1,3 +1,1 @@
-export { Layout } from './Layout';
-export { Breadcrumb } from './Breadcrumb';
-export { Sidebar, StatsCard } from './Sidebar';
+export { default as Sidebar } from './Sidebar';

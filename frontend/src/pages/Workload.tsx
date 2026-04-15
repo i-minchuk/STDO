@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getWorkload } from '../api/workload';
-import type { WorkloadResponse, EngineerWorkload } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
-import { Users, AlertTriangle, UserCheck, UserX } from 'lucide-react';
+import type { WorkloadResponse, } from '../types';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Users, UserCheck, UserX } from 'lucide-react';
 
 const MOCK_WORKLOAD: WorkloadResponse = {
   period: { from: '2026-03-25', to: '2026-04-24', work_days: 22 },

@@ -1,21 +1,38 @@
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+
+type BadgeVariant =
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'info'
+  | 'neutral'
+  | 'leaders'
+  | 'engineering'
+  | 'production'
+  | 'docs'
+  | 'approvals'
+  | 'audit';
 
 interface BadgeProps {
-  variant?: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'leaders' | 'engineering' | 'production' | 'docs' | 'approvals' | 'audit';
+  variant?: BadgeVariant;
   children: ReactNode;
   className?: string;
   leftIcon?: ReactNode;
   dot?: boolean;
 }
 
-export default function Badge({ 
-  children, 
+function cx(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
+}
+
+export default function Badge({
+  children,
   variant = 'neutral',
-  className = '', 
+  className = '',
   leftIcon,
-  dot = false
+  dot = false,
 }: BadgeProps) {
-  const variants = {
+  const variants: Record<BadgeVariant, string> = {
     success: 'bg-[var(--success-light)] text-[var(--success)]',
     warning: 'bg-[var(--warning-light)] text-[var(--warning)]',
     error: 'bg-[var(--error-light)] text-[var(--error)]',
@@ -30,12 +47,18 @@ export default function Badge({
   };
 
   return (
-    <span 
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${variants[variant]} ${className}`}
+    <span
+      className={cx(
+        'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium leading-none',
+        variants[variant],
+        className
+      )}
     >
-      {dot && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
-      {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
-      {children}
+      {dot ? (
+        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" aria-hidden="true" />
+      ) : null}
+      {leftIcon ? <span className="inline-flex">{leftIcon}</span> : null}
+      <span>{children}</span>
     </span>
   );
 }

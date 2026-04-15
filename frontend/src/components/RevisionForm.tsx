@@ -31,7 +31,7 @@ export default function RevisionForm({
   isOpen,
   onClose,
   onSubmit,
-  documentId,
+  //documentId,
   nextRevisionIndex,
 }: RevisionFormProps) {
   const [loading, setLoading] = useState(false);

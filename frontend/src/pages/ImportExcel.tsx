@@ -1,230 +1,534 @@
-import { useState, useRef } from 'react';
-import type { ExcelSheet, TargetField } from '../types';
-import { Upload, FileSpreadsheet, ArrowRight, Check, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Upload, FileSpreadsheet, CheckCircle2, ArrowRight, ArrowLeft, Plus, X } from 'lucide-react';
 
-const SYSTEM_FIELDS: TargetField[] = [
-  { field: 'document_code', label: 'Код документа', required: true },
-  { field: 'title', label: 'Наименование', required: true },
-  { field: 'doc_type', label: 'Тип документа', required: false },
-  { field: 'discipline', label: 'Дисциплина', required: false },
-  { field: 'engineer', label: 'Исполнитель', required: false },
-  { field: 'reviewer', label: 'Проверяющий', required: false },
-  { field: 'planned_start', label: 'Дата начала (план)', required: false },
-  { field: 'planned_finish', label: 'Дата окончания (план)', required: false },
-  { field: 'planned_hours', label: 'Плановые часы', required: false },
-  { field: 'ifr_date', label: 'Дата IFR', required: false },
-  { field: 'ifa_date', label: 'Дата IFA', required: false },
-  { field: 'ifc_date', label: 'Дата IFC', required: false },
-  { field: 'status', label: 'Статус', required: false },
-  { field: 'revision', label: 'Ревизия', required: false },
-  { field: 'notes', label: 'Примечания', required: false },
+type ImportStep = 'upload' | 'mapping' | 'preview' | 'done';
+
+type ExcelColumn = {
+  key: string;
+  header: string;
+  sample?: string;
+};
+
+type ExcelSheet = {
+  name: string;
+  columns: ExcelColumn[];
+  rows: Record<string, string | number | null>[];
+};
+
+type MappingValue = string;
+
+type CustomColumn = {
+  id: string;
+  name: string;
+};
+
+const TARGET_FIELDS = [
+  { key: 'code', label: 'Код документа', required: true },
+  { key: 'title', label: 'Наименование', required: true },
+  { key: 'discipline', label: 'Дисциплина', required: false },
+  { key: 'doc_type', label: 'Тип документа', required: false },
+  { key: 'revision', label: 'Ревизия', required: false },
+  { key: 'status', label: 'Статус', required: false },
+] as const;
+
+const MOCK_SHEETS: ExcelSheet[] = [
+  {
+    name: 'MDR',
+    columns: [
+      { key: 'A', header: 'Document Code', sample: 'NPP-KM-001' },
+      { key: 'B', header: 'Document Title', sample: 'Общий вид конструкций' },
+      { key: 'C', header: 'Discipline', sample: 'КМ' },
+      { key: 'D', header: 'Type', sample: 'Чертеж' },
+      { key: 'E', header: 'Revision', sample: 'B.1' },
+      { key: 'F', header: 'Status', sample: 'approved' },
+    ],
+    rows: [
+      {
+        A: 'NPP-KM-001',
+        B: 'Общий вид конструкций',
+        C: 'КМ',
+        D: 'Чертеж',
+        E: 'B.1',
+        F: 'approved',
+      },
+      {
+        A: 'NPP-AR-014',
+        B: 'План на отметке 0.000',
+        C: 'АР',
+        D: 'План',
+        E: 'A.2',
+        F: 'review',
+      },
+      {
+        A: 'NPP-KJ-122',
+        B: 'Схема армирования фундамента',
+        C: 'КЖ',
+        D: 'Схема',
+        E: 'A.1',
+        F: 'draft',
+      },
+    ],
+  },
+  {
+    name: 'Register',
+    columns: [
+      { key: 'A', header: 'Code', sample: 'PUMP-001' },
+      { key: 'B', header: 'Title', sample: 'Спецификация насосов' },
+      { key: 'C', header: 'Rev', sample: '0' },
+    ],
+    rows: [
+      { A: 'PUMP-001', B: 'Спецификация насосов', C: '0' },
+      { A: 'PIPE-010', B: 'Ведомость трубопроводов', C: '1' },
+    ],
+  },
 ];
 
-const MOCK_SHEETS: ExcelSheet[] = [{
-  name: 'MDR',
-  columns: [
-    'Doc No', 'Title', 'Discipline', 'Doc Type', 'Status', 'Rev', 'Engineer',
-    'Checker', 'Approver', 'IFR Date', 'IFA Date', 'IFC Date', 'Eng Hrs',
-    'Weight', 'Customer Ref', 'Area', 'Building', 'System', 'Subsystem',
-    'Tag No', 'Priority', 'Phase', 'Contract No', 'PO No', 'Vendor',
-    'Supplier Doc', 'Native Format', 'Pages', 'Size', 'Language',
-    'Confidentiality', 'Distribution', 'Remarks', 'Client Comments',
-    'Response Date', 'Resubmit Date', 'Final Date', 'Handover Date',
-    'Archive Ref', 'QA Check',
-  ],
-  total_rows: 147,
-  preview: [
-    { 'Doc No': 'GRS-KM-001', 'Title': 'Общий вид металлоконструкций', 'Discipline': 'КМ', 'Doc Type': 'Drawing', 'Status': 'In Progress', 'Rev': 'A01', 'Engineer': 'Иванов А.А.', 'Eng Hrs': '16', 'IFR Date': '2026-04-15' },
-    { 'Doc No': 'GRS-KM-002', 'Title': 'Узлы сопряжения', 'Discipline': 'КМ', 'Doc Type': 'Drawing', 'Status': 'Not Started', 'Rev': '', 'Engineer': 'Петров Б.В.', 'Eng Hrs': '24', 'IFR Date': '2026-04-20' },
-  ],
-}];
+async function parseExcelFile(_file: File): Promise<{ sheets: ExcelSheet[] }> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ sheets: MOCK_SHEETS });
+    }, 700);
+  });
+}
 
 export default function ImportExcel() {
-  const [step, setStep] = useState<'upload' | 'mapping' | 'result'>('upload');
+  const [step, setStep] = useState<ImportStep>('upload');
+  const [filename, setFilename] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const [sheets, setSheets] = useState<ExcelSheet[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<ExcelSheet | null>(null);
-  const [mappings, setMappings] = useState<Record<string, string>>({});
-  const [customCols, setCustomCols] = useState<string[]>([]);
-  const [filename, setFilename] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const [mappings, setMappings] = useState<Record<string, MappingValue>>({});
+  const [customCols, setCustomCols] = useState<CustomColumn[]>([]);
+  const [newCustomColName, setNewCustomColName] = useState('');
+
+  const selectedColumns = selectedSheet?.columns ?? [];
+  const selectedRows = selectedSheet?.rows ?? [];
+
+  const mappedPreview = useMemo(() => {
+    if (!selectedSheet) return [];
+
+    return selectedRows.slice(0, 5).map((row) => {
+      const result: Record<string, string | number | null> = {};
+
+      Object.entries(mappings).forEach(([targetField, sourceColumnKey]) => {
+        result[targetField] = row[sourceColumnKey] ?? null;
+      });
+
+      customCols.forEach((col) => {
+        result[`custom:${col.id}`] = null;
+      });
+
+      return result;
+    });
+  }, [selectedRows, mappings, customCols, selectedSheet]);
+
+  const requiredMissing = useMemo(() => {
+    return TARGET_FIELDS
+      .filter((field) => field.required)
+      .some((field) => !mappings[field.key]);
+  }, [mappings]);
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
+
+    setLoading(true);
     setFilename(file.name);
 
-    // Try real API, fallback to mock
     try {
-      const { previewExcel } = await import('../api/import');
-      const result = await previewExcel(file);
+      const result = await parseExcelFile(file);
       setSheets(result.sheets);
-      if (result.sheets.length > 0) {
-        setSelectedSheet(result.sheets[0]);
-      }
+      setSelectedSheet(result.sheets[0] ?? null);
+      setStep('mapping');
     } catch {
       setSheets(MOCK_SHEETS);
-      setSelectedSheet(MOCK_SHEETS[0]);
+      setSelectedSheet(MOCK_SHEETS[0] ?? null);
+      setStep('mapping');
+    } finally {
+      setLoading(false);
     }
-    setStep('mapping');
   };
 
-  const handleMapping = (systemField: string, excelCol: string) => {
-    setMappings(prev => ({ ...prev, [systemField]: excelCol }));
+  const handleMapChange = (targetKey: string, sourceKey: string) => {
+    setMappings((prev) => ({
+      ...prev,
+      [targetKey]: sourceKey,
+    }));
   };
 
-  const toggleCustomCol = (col: string) => {
-    setCustomCols(prev =>
-      prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]
-    );
+  const handleAddCustomCol = () => {
+    const name = newCustomColName.trim();
+    if (!name) return;
+
+    const newCol: CustomColumn = {
+      id: `${Date.now()}`,
+      name,
+    };
+
+    setCustomCols((prev) => [...prev, newCol]);
+    setNewCustomColName('');
   };
 
-  const mappedExcelCols = Object.values(mappings);
-  const unmappedCols = selectedSheet?.columns.filter(c => !mappedExcelCols.includes(c)) || [];
+  const handleRemoveCustomCol = (id: string) => {
+    setCustomCols((prev) => prev.filter((col) => col.id !== id));
+  };
+
+  const handleImport = async () => {
+    setLoading(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 900));
+
+    setLoading(false);
+    setStep('done');
+  };
+
+  const resetAll = () => {
+    setStep('upload');
+    setSheets([]);
+    setSelectedSheet(null);
+    setMappings({});
+    setCustomCols([]);
+    setFilename('');
+    setNewCustomColName('');
+  };
 
   return (
-    <div className="max-w-6xl">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-3">
-        <FileSpreadsheet size={28} className="text-green-600" /> Импорт из Excel
-      </h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Импорт Excel</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Загрузка MDR / реестров документов, сопоставление колонок и предпросмотр перед импортом.
+        </p>
+      </div>
 
-      {/* Step 1: Upload */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          {[
+            { key: 'upload', label: 'Загрузка' },
+            { key: 'mapping', label: 'Сопоставление' },
+            { key: 'preview', label: 'Предпросмотр' },
+            { key: 'done', label: 'Готово' },
+          ].map((item, index) => {
+            const active =
+              (step === item.key) ||
+              (step === 'mapping' && item.key === 'upload') ||
+              (step === 'preview' && (item.key === 'upload' || item.key === 'mapping')) ||
+              (step === 'done');
+
+            return (
+              <div key={item.key} className="flex items-center gap-3">
+                <div
+                  className={`flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-sm font-semibold ${
+                    active ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {index + 1}
+                </div>
+                <span className={active ? 'font-medium text-gray-900' : 'text-gray-500'}>
+                  {item.label}
+                </span>
+                {index < 3 ? <ArrowRight size={16} className="text-gray-300" /> : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {step === 'upload' && (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <Upload size={48} className="mx-auto text-gray-400 mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Загрузите файл заказчика</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Поддерживается формат .xlsx. Система прочитает все колонки и предложит выбрать нужные.
-          </p>
-          <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={handleFile} className="hidden" />
-          <button onClick={() => fileRef.current?.click()}
-            className="bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700">
-            Выбрать файл
-          </button>
-          <button onClick={() => { setSheets(MOCK_SHEETS); setSelectedSheet(MOCK_SHEETS[0]); setFilename('MDR_GRS-5.xlsx'); setStep('mapping'); }}
-            className="ml-4 bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-200 text-sm">
-            Демо-файл (40 колонок)
-          </button>
+        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 shadow-sm">
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-4 rounded-full bg-primary-50 p-4 text-primary-600">
+              <Upload size={28} />
+            </div>
+
+            <h2 className="text-lg font-semibold text-gray-900">Загрузите Excel-файл</h2>
+            <p className="mt-2 max-w-2xl text-sm text-gray-500">
+              Поддерживаются MDR, реестры и ведомости. После загрузки можно выбрать лист, сопоставить колонки
+              и проверить данные перед импортом.
+            </p>
+
+            <label className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700">
+              <FileSpreadsheet size={16} />
+              {loading ? 'Обработка...' : 'Выбрать файл'}
+              <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileChange} />
+            </label>
+
+            <button
+              type="button"
+              className="mt-3 text-sm text-primary-600 hover:text-primary-700"
+              onClick={() => {
+                setSheets(MOCK_SHEETS);
+                setSelectedSheet(MOCK_SHEETS[0]);
+                setFilename('MDR_GRS-5.xlsx');
+                setStep('mapping');
+              }}
+            >
+              Использовать демо-файл
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Step 2: Mapping */}
-      {step === 'mapping' && selectedSheet && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="font-medium">{filename}</span>
-                <span className="text-gray-400 text-sm ml-3">Лист: {selectedSheet.name} — {selectedSheet.total_rows} строк, {selectedSheet.columns.length} колонок</span>
-              </div>
-              <button onClick={() => { setStep('upload'); setSheets([]); setMappings({}); setCustomCols([]); }}
-                className="text-gray-400 hover:text-gray-600 text-sm">Другой файл</button>
-            </div>
-          </div>
+      {(step === 'mapping' || step === 'preview' || step === 'done') && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
+          <div className="space-y-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Файл</h3>
+              <p className="mt-2 break-all text-sm font-medium text-gray-900">{filename || '—'}</p>
 
-          {/* Mapping table */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="font-semibold mb-4">Привязка колонок (15 полей системы)</h2>
-              <div className="space-y-3">
-                {SYSTEM_FIELDS.map(f => (
-                  <div key={f.field} className="flex items-center gap-3">
-                    <div className="w-48 text-sm">
-                      {f.label}
-                      {f.required && <span className="text-red-500 ml-1">*</span>}
-                    </div>
-                    <ArrowRight size={14} className="text-gray-300" />
-                    <select
-                      value={mappings[f.field] || ''}
-                      onChange={e => handleMapping(f.field, e.target.value)}
-                      className={`flex-1 px-3 py-1.5 border rounded-lg text-sm ${mappings[f.field] ? 'border-green-400 bg-green-50' : ''}`}
+              <button
+                type="button"
+                className="mt-4 text-sm text-primary-600 hover:text-primary-700"
+                onClick={resetAll}
+              >
+                Загрузить другой файл
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Листы</h3>
+              <div className="mt-4 space-y-2">
+                {sheets.map((sheet) => {
+                  const isActive = selectedSheet?.name === sheet.name;
+
+                  return (
+                    <button
+                      key={sheet.name}
+                      type="button"
+                      onClick={() => setSelectedSheet(sheet)}
+                      className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm ${
+                        isActive
+                          ? 'border-primary-300 bg-primary-50 text-primary-700'
+                          : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
                     >
-                      <option value="">— Не привязано —</option>
-                      {selectedSheet.columns.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                    {mappings[f.field] && <Check size={16} className="text-green-500" />}
-                  </div>
-                ))}
+                      <span className="font-medium">{sheet.name}</span>
+                      <span className="text-xs opacity-70">{sheet.rows.length} строк</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="font-semibold mb-4">Дополнительные колонки (по выбору автора)</h2>
-              <p className="text-sm text-gray-500 mb-3">
-                Отметьте колонки из файла заказчика, которые хотите сохранить дополнительно:
-              </p>
-              <div className="max-h-96 overflow-y-auto space-y-1">
-                {unmappedCols.map(col => (
-                  <label key={col} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
-                    <input type="checkbox" checked={customCols.includes(col)} onChange={() => toggleCustomCol(col)}
-                      className="rounded border-gray-300 text-primary-600" />
-                    <span className="text-sm">{col}</span>
-                  </label>
-                ))}
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                Пользовательские поля
+              </h3>
+
+              <div className="mt-4 flex gap-2">
+                <input
+                  value={newCustomColName}
+                  onChange={(e) => setNewCustomColName(e.target.value)}
+                  placeholder="Например: Зона, Блок, Подрядчик"
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomCol}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  <Plus size={16} />
+                  Добавить
+                </button>
               </div>
-              {customCols.length > 0 && (
-                <div className="mt-3 text-sm text-primary-600 font-medium">
-                  Выбрано: {customCols.length} дополнительных колонок
+
+              {customCols.length > 0 ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {customCols.map((col) => (
+                    <span
+                      key={col.id}
+                      className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+                    >
+                      {col.name}
+                      <button type="button" onClick={() => handleRemoveCustomCol(col.id)}>
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
                 </div>
+              ) : (
+                <p className="mt-4 text-sm text-gray-400">Дополнительные поля пока не добавлены.</p>
               )}
             </div>
           </div>
 
-          {/* Preview */}
-          {selectedSheet.preview.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-6 overflow-x-auto">
-              <h2 className="font-semibold mb-3">Превью данных (первые строки)</h2>
-              <table className="text-sm w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {selectedSheet.columns.slice(0, 10).map(c => (
-                      <th key={c} className="px-3 py-2 text-xs text-gray-500 text-left whitespace-nowrap">{c}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedSheet.preview.map((row, i) => (
-                    <tr key={i} className="border-t">
-                      {selectedSheet.columns.slice(0, 10).map(c => (
-                        <td key={c} className="px-3 py-2 whitespace-nowrap">{row[c] || ''}</td>
+          <div className="space-y-6">
+            {step === 'mapping' && selectedSheet && (
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Сопоставление колонок</h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Лист: <span className="font-medium text-gray-700">{selectedSheet.name}</span>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={requiredMissing}
+                    onClick={() => setStep('preview')}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium ${
+                      requiredMissing
+                        ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                        : 'bg-primary-600 text-white hover:bg-primary-700'
+                    }`}
+                  >
+                    Далее
+                  </button>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                          Поле системы
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                          Колонка Excel
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                          Пример
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {TARGET_FIELDS.map((field) => {
+                        const mappedKey = mappings[field.key];
+                        const mappedColumn = selectedColumns.find((col) => col.key === mappedKey);
+
+                        return (
+                          <tr key={field.key}>
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-gray-900">
+                                {field.label}
+                                {field.required ? <span className="ml-1 text-red-500">*</span> : null}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <select
+                                value={mappings[field.key] || ''}
+                                onChange={(e) => handleMapChange(field.key, e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-500"
+                              >
+                                <option value="">Не выбрано</option>
+                                {selectedColumns.map((col) => (
+                                  <option key={col.key} value={col.key}>
+                                    {col.header}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500">
+                              {mappedColumn?.sample || '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {requiredMissing ? (
+                  <p className="mt-4 text-sm text-amber-600">
+                    Заполни обязательные сопоставления: Код документа и Наименование.
+                  </p>
+                ) : null}
+              </div>
+            )}
+
+            {(step === 'preview' || step === 'done') && selectedSheet && (
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Предпросмотр импорта</h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Проверка первых строк перед загрузкой в систему.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {step !== 'done' && (
+                      <button
+                        type="button"
+                        onClick={() => setStep('mapping')}
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        <ArrowLeft size={16} />
+                        Назад
+                      </button>
+                    )}
+
+                    {step !== 'done' && (
+                      <button
+                        type="button"
+                        onClick={handleImport}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60"
+                      >
+                        <CheckCircle2 size={16} />
+                        {loading ? 'Импорт...' : 'Импортировать'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        {Object.keys(mappedPreview[0] || {}).map((key) => (
+                          <th
+                            key={key}
+                            className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                          >
+                            {key}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {mappedPreview.map((row, rowIndex) => (
+                        <tr key={rowIndex}>
+                          {Object.entries(row).map(([key, value]) => (
+                            <td key={key} className="px-4 py-3 text-sm text-gray-700">
+                              {value === null ? '—' : String(value)}
+                            </td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                    </tbody>
+                  </table>
+                </div>
 
-          <div className="flex gap-3">
-            <button onClick={() => setStep('result')}
-              className="bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700">
-              Импортировать
-            </button>
-            <span className="text-sm text-gray-400 self-center">
-              Привязано: {Object.keys(mappings).filter(k => mappings[k]).length} из {SYSTEM_FIELDS.length} полей
-            </span>
-          </div>
-        </div>
-      )}
+                {step === 'done' ? (
+                  <div className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 text-green-600">
+                        <CheckCircle2 size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-green-800">Импорт завершён</h3>
+                        <p className="mt-1 text-sm text-green-700">
+                          Данные успешно подготовлены и загружены. Можешь начать новый импорт или перейти к реестру документов.
+                        </p>
 
-      {/* Step 3: Result */}
-      {step === 'result' && (
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-          <Check size={48} className="mx-auto text-green-500 mb-4" />
-          <h2 className="text-xl font-bold mb-2">Импорт завершён</h2>
-          <p className="text-gray-500 mb-2">Импортировано: {selectedSheet?.total_rows || 0} документов</p>
-          <p className="text-gray-400 text-sm mb-6">
-            Привязано {Object.keys(mappings).filter(k => mappings[k]).length} системных полей + {customCols.length} дополнительных колонок
-          </p>
-          <div className="flex gap-3 justify-center">
-            <button onClick={() => { setStep('upload'); setMappings({}); setCustomCols([]); }}
-              className="bg-gray-100 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200">
-              Загрузить ещё
-            </button>
-            <a href="/documents" className="bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700">
-              К документам
-            </a>
+                        <div className="mt-4 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={resetAll}
+                            className="rounded-lg border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-100"
+                          >
+                            Новый импорт
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
       )}

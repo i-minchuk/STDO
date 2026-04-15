@@ -1,41 +1,80 @@
-import React from 'react';
+import type { ChangeEventHandler } from 'react';
 
-interface SelectOption {
-  value: string | number;
+type SelectValue = string | number;
+
+export interface SelectOption {
+  value: SelectValue;
   label: string;
 }
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps {
   label?: string;
+  id?: string;
+  name?: string;
+  value?: SelectValue;
+  onChange?: ChangeEventHandler<HTMLSelectElement>;
   options: SelectOption[];
   error?: string;
+  className?: string;
+  required?: boolean;
+  disabled?: boolean;
+  placeholder?: string;
 }
 
-export default function Select({ label, id, options, error, className = '', ...props }: SelectProps) {
-  const selectId = id || (label ? `select-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined);
+export default function Select({
+  label,
+  id,
+  name,
+  options,
+  error,
+  className = '',
+  value = '',
+  onChange,
+  required = false,
+  disabled = false,
+  placeholder,
+}: SelectProps) {
   return (
-    <div className="space-y-1">
-      {label && (
-        <label htmlFor={selectId} className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+    <div className={className}>
+      {label ? (
+        <label
+          htmlFor={id}
+          className="mb-1 block text-sm font-medium"
+          style={{ color: 'var(--text-primary)' }}
+        >
           {label}
+          {required ? <span className="ml-1 text-red-500">*</span> : null}
         </label>
-      )}
+      ) : null}
+
       <select
-        id={selectId}
-        className={`block w-full pl-3 pr-10 py-2 text-base border focus:outline-none focus:ring-1 sm:text-sm rounded-md shadow-sm ${className}`}
-        style={{ 
+        id={id}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        disabled={disabled}
+        className="w-full rounded-md border px-3 py-2 text-sm outline-none"
+        style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: error ? 'var(--error)' : 'var(--border-default)',
-          color: 'var(--text-primary)'
+          color: 'var(--text-primary)',
         }}
       >
+        {placeholder ? <option value="">{placeholder}</option> : null}
+
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={String(option.value)} value={option.value}>
             {option.label}
           </option>
         ))}
       </select>
-      {error && <p className="mt-1 text-xs" style={{ color: 'var(--error)' }}>{error}</p>}
+
+      {error ? (
+        <p className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

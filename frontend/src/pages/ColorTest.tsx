@@ -27,14 +27,16 @@ export default function ColorTest() {
       {/* Бейджи */}
       <section className="bg-bg-card rounded-xl shadow-sm p-6 border border-border-light">
         <h2 className="text-lg font-semibold text-text-base mb-4">Бейджи (Badge)</h2>
-        <div className="flex flex-wrap gap-4">
-          <Badge variant="gray">Gray</Badge>
-          <Badge variant="blue">Blue (Info)</Badge>
-          <Badge variant="green">Green (Success)</Badge>
-          <Badge variant="yellow">Yellow (Warning)</Badge>
-          <Badge variant="red">Red (Error)</Badge>
-          <Badge variant="indigo">Indigo (Primary)</Badge>
-          <Badge variant="green" dot>With Dot</Badge>
+        <div className="flex flex-wrap gap-3">
+          <Badge variant="neutral">Neutral</Badge>
+          <Badge variant="info">Info</Badge>
+          <Badge variant="success">Success</Badge>
+          <Badge variant="warning">Warning</Badge>
+          <Badge variant="error">Error</Badge>
+          <Badge variant="leaders">Leaders</Badge>
+          <Badge variant="success" dot>
+            With Dot
+          </Badge>
         </div>
       </section>
 

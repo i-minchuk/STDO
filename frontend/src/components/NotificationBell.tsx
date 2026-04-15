@@ -1,153 +1,113 @@
-import { useEffect, useState } from 'react';
-import { Bell, X } from 'lucide-react';
-import { getNotifications, markNotificationRead, getUnreadNotificationCount } from '../api/gamification';
-import type { Notification } from '../types';
+import { useEffect, useMemo, useState } from 'react';
+import { Bell } from 'lucide-react';
 
-interface NotificationBellProps {
-  onNotificationClick?: () => void;
-  className?: string;
-}
+type LocalNotification = {
+  id: number;
+  type: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+};
 
-export default function NotificationBell({ onNotificationClick, className = '' }: NotificationBellProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isOpen, setIsOpen] = useState(false);
+const MOCK_NOTIFICATIONS: LocalNotification[] = [
+  {
+    id: 1,
+    type: 'approval',
+    message: 'Документ DOC-001 ожидает согласования',
+    is_read: false,
+    created_at: '2026-04-15T09:00:00Z',
+  },
+  {
+    id: 2,
+    type: 'task',
+    message: 'Задача по проекту PRJ-001 просрочена',
+    is_read: false,
+    created_at: '2026-04-15T08:30:00Z',
+  },
+  {
+    id: 3,
+    type: 'system',
+    message: 'Импорт Excel завершён успешно',
+    is_read: true,
+    created_at: '2026-04-14T18:00:00Z',
+  },
+];
+
+export default function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<LocalNotification[]>([]);
 
   useEffect(() => {
-    loadNotifications();
-    const interval = setInterval(loadUnreadCount, 30000); // Check every 30 seconds
-    return () => clearInterval(interval);
+    setNotifications(MOCK_NOTIFICATIONS);
   }, []);
 
-  const loadNotifications = async () => {
-    try {
-      const data = await getNotifications();
-      setNotifications(data);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-    }
-  };
-
-  const loadUnreadCount = async () => {
-    try {
-      const data = await getUnreadNotificationCount();
-      setUnreadCount(data.count);
-    } catch (error) {
-      console.error('Failed to load unread count:', error);
-    }
-  };
-
-  const handleMarkAsRead = async (notificationId: number) => {
-    try {
-      await markNotificationRead(notificationId);
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-    }
-  };
-
-  const unreadNotifications = notifications.filter(n => !n.is_read);
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.is_read).length,
+    [notifications]
+  );
 
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`relative p-2 rounded-lg transition-all ${className}`}
-        style={{ color: 'var(--notification-icon, var(--text-tertiary))' }}
+        type="button"
+        className="relative flex h-10 w-10 items-center justify-center rounded-md"
+        style={{ color: 'var(--notification-icon)' }}
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Уведомления"
       >
-        <Bell size={20} className="w-5 h-5" />
-        {unreadCount > 0 && (
-          <span 
-            className="absolute -top-0.5 -right-0.5 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-sm"
-            style={{ 
-              backgroundColor: 'var(--notification-badge, #EF4444)',
-              color: '#FFFFFF'
+        <Bell size={18} />
+        {unreadCount > 0 ? (
+          <span
+            className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold"
+            style={{
+              backgroundColor: 'var(--notification-badge)',
+              color: 'white',
             }}
           >
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {unreadCount}
           </span>
-        )}
+        ) : null}
       </button>
 
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div 
-            className="absolute right-0 mt-2 w-80 rounded-lg shadow-lg border z-50"
-            style={{ 
-              backgroundColor: 'var(--bg-surface)',
-              borderColor: 'var(--border-default)'
+      {open ? (
+        <div
+          className="absolute right-0 z-50 mt-2 w-80 rounded-xl border shadow-lg"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            borderColor: 'var(--border-default)',
+          }}
+        >
+          <div
+            className="border-b px-4 py-3 text-sm font-semibold"
+            style={{
+              borderColor: 'var(--border-default)',
+              color: 'var(--text-primary)',
             }}
           >
-            <div className="p-4 border-b" style={{ borderColor: 'var(--border-default)' }}>
-              <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Уведомления</h3>
-            </div>
-
-            <div className="max-h-96 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="p-4 text-center" style={{ color: 'var(--text-tertiary)' }}>
-                  Нет уведомлений
-                </div>
-              ) : (
-                notifications.slice(0, 10).map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-4 border-b hover:bg-[var(--bg-hover)] cursor-pointer transition-colors ${
-                      !notification.is_read ? '' : ''
-                    }`}
-                    style={{ 
-                      borderColor: 'var(--border-light)',
-                      backgroundColor: !notification.is_read ? 'var(--primary-light)' : 'transparent'
-                    }}
-                    onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
-                          {notification.title}
-                        </h4>
-                        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                          {notification.message}
-                        </p>
-                        <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
-                          {new Date(notification.created_at).toLocaleString('ru-RU')}
-                        </p>
-                      </div>
-                      {!notification.is_read && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarkAsRead(notification.id);
-                          }}
-                          className="ml-2 hover:text-[var(--text-primary)] transition-colors"
-                          style={{ color: 'var(--text-tertiary)' }}
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {notifications.length > 10 && (
-              <div className="p-3 border-t text-center" style={{ borderColor: 'var(--border-default)' }}>
-                <button
-                  onClick={onNotificationClick}
-                  className="text-sm font-medium transition-colors"
-                  style={{ color: 'var(--primary)', '--tw-text-opacity': 1 }}
-                >
-                  Посмотреть все уведомления
-                </button>
-              </div>
-            )}
+            Уведомления
           </div>
-        </>
-      )}
+
+          <div className="max-h-96 overflow-auto">
+            {notifications.map((n) => (
+              <div
+                key={n.id}
+                className="border-b px-4 py-3 last:border-b-0"
+                style={{
+                  borderColor: 'var(--border-light)',
+                  backgroundColor: n.is_read ? 'transparent' : 'var(--bg-hover)',
+                }}
+              >
+                <div className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                  {n.message}
+                </div>
+                <div className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {new Date(n.created_at).toLocaleString('ru-RU')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

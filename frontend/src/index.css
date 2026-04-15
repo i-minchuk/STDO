@@ -743,7 +743,7 @@ a:hover {
 
 /* Border semantic class */
 .border-token {
-  border-color: var(--border-default);
+  border-color: var(--border-light);
 }
 
 /* Page headings - ensure visibility in dark mode */
