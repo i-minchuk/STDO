@@ -119,21 +119,21 @@
    ============================================ */
 [data-theme='dark'] {
   /* === BASE BACKGROUNDS === */
-  --bg-app: #0b1220;             /* Глубокий navy */
-  --bg-surface: #182235;         /* Светлее для панелей */
-  --bg-surface-2: #223049;       /* Вторичный фон */
-  --bg-hover: #F1F5F9;           /* Ховер (усилен для видимости) */
-  --bg-selected: #E2E8F0;        /* Выбранные */
+  --bg-app: #081121;             /* Глубокий navy - темнее */
+  --bg-surface: #0f1b31;         /* Светлее для панелей */
+  --bg-surface-2: #16233d;       /* Вторичный фон */
+  --bg-hover: #1b2b49;           /* Ховер (усилен для видимости) */
+  --bg-selected: #223556;        /* Выбранные */
 
   /* === TOP BAR === */
-  --bg-topbar:rgb(29, 40, 63) ;          /* Почти чёрный */
+  --bg-topbar: rgb(29, 40, 63);  /* Почти чёрный */
   --bg-topbar-hover: #111827;
   
   /* === PRIMARY VIOLET (ярче для контраста) === */
-  --primary: #7C3AED;
-  --primary-hover: #6D28D9;
-  --primary-light: #EDE9FE;
-  --primary-dark: #5B21B6;
+  --primary: #A78BFA;            /* Ярче фиолетовый */
+  --primary-hover: #C4B5FD;
+  --primary-light: #2E1065;
+  --primary-dark: #7C3AED;
   
   /* === SECTION ACCENTS (адаптированы для dark) === */
   --accent-leaders: #C4B5FD;
@@ -166,15 +166,15 @@
   
   /* === TEXT (усилен контраст) === */
   --text-primary: #F8FAFC;       /* Ярче основной текст */
-  --text-secondary: #D5DEEA;     /* Вторичный - хорошо читается */
-  --text-tertiary: #A5B4C7;      /* Muted - усилен для видимости */
-  --text-disabled: #64748B;      /* Disabled - более заметный */
+  --text-secondary: #D7DEB;      /* Вторичный - хорошо читается */
+  --text-tertiary: #9FB0C7;      /* Muted - усилен для видимости */
+  --text-disabled: #6B7D96;      /* Disabled - более заметный */
   --text-inverse: #0F172A;
   
   /* === BORDERS === */
-  --border-default: #334155;
-  --border-light: #1E293B;
-  --border-dark: #64748B;
+  --border-default: #22324F;
+  --border-light: #1A2740;
+  --border-dark: #415575;
   --border-focus: #A78BFA;
   
   /* === SHADOWS (темнее) === */
@@ -185,13 +185,13 @@
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.7);
 
   /* === TOPBAR ICONS (усилены для видимости) === */
-  --topbar-icon: #D8E1EE;        /* Иконки по умолчанию */
+  --topbar-icon: #DBE4F0;        /* Иконки по умолчанию */
   --topbar-icon-hover: #FFFFFF;  /* Иконки при hover */
-  --topbar-icon-active: #D8E1EE; /* Активные иконки */
+  --topbar-icon-active: #A78BFA; /* Активные иконки */
 
   /* === NOTIFICATION BELL === */
-  --notification-icon: #94A3B8;
-  --notification-icon-hover: #F1F5F9;
+  --notification-icon: #DBE4F0;
+  --notification-icon-hover: #FFFFFF;
   --notification-badge: #EF4444;
 }
 
@@ -700,6 +700,80 @@ a:hover {
 .density-comfortable {
   --space-component: var(--space-4);
   font-size: 15px;
+}
+
+/* ============================================
+   SEMANTIC HELPER CLASSES
+   ============================================ */
+
+/* Surface backgrounds */
+.surface-app {
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
+.surface-card {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+}
+
+.surface-card-soft {
+  background: var(--bg-surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+}
+
+/* Text semantic classes */
+.text-primary-token {
+  color: var(--text-primary);
+}
+
+.text-secondary-token {
+  color: var(--text-secondary);
+}
+
+.text-tertiary-token {
+  color: var(--text-tertiary);
+}
+
+.text-disabled-token {
+  color: var(--text-disabled);
+}
+
+/* Border semantic class */
+.border-token {
+  border-color: var(--border-default);
+}
+
+/* Page headings - ensure visibility in dark mode */
+.page-title,
+.section-title,
+.card-title,
+.metric-value {
+  color: var(--text-primary);
+}
+
+.card-subtitle,
+.metric-label,
+.table-head,
+.table-cell-muted {
+  color: var(--text-secondary);
+}
+
+/* Dark mode specific rules */
+[data-theme='dark'] .page-title,
+[data-theme='dark'] .section-title,
+[data-theme='dark'] .card-title,
+[data-theme='dark'] .metric-value {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .card-subtitle,
+[data-theme='dark'] .metric-label,
+[data-theme='dark'] .table-head,
+[data-theme='dark'] .table-cell-muted {
+  color: var(--text-secondary);
 }
 
 /* ============================================

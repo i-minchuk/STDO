@@ -2,16 +2,16 @@ type StatusBadgeProps = {
   status?: string;
 };
 
-const STATUS_MAP: Record<string, string> = {
-  active: "bg-info-100 text-info-700",
-  archived: "bg-secondary-100 text-secondary-700",
-  completed: "bg-success-100 text-success-700",
-  inprogress: "bg-warning-100 text-warning-700",
-  notstarted: "bg-secondary-100 text-secondary-700",
-  overdue: "bg-error-100 text-error-700",
-  low: "bg-success-100 text-success-700",
-  medium: "bg-warning-100 text-warning-700",
-  high: "bg-error-100 text-error-700",
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  active: { bg: 'var(--info-light)', text: 'var(--info)' },
+  archived: { bg: 'var(--bg-hover)', text: 'var(--text-secondary)' },
+  completed: { bg: 'var(--success-light)', text: 'var(--success)' },
+  inprogress: { bg: 'var(--warning-light)', text: 'var(--warning)' },
+  notstarted: { bg: 'var(--bg-hover)', text: 'var(--text-secondary)' },
+  overdue: { bg: 'var(--error-light)', text: 'var(--error)' },
+  low: { bg: 'var(--success-light)', text: 'var(--success)' },
+  medium: { bg: 'var(--warning-light)', text: 'var(--warning)' },
+  high: { bg: 'var(--error-light)', text: 'var(--error)' },
 };
 
 const LABEL_MAP: Record<string, string> = {
@@ -28,11 +28,14 @@ const LABEL_MAP: Record<string, string> = {
 
 export default function StatusBadge({ status = "unknown" }: StatusBadgeProps) {
   const key = String(status).toLowerCase().replace(/[\s_-]/g, "");
-  const cls = STATUS_MAP[key] ?? "bg-gray-100 text-gray-700";
+  const colors = STATUS_COLORS[key] ?? { bg: 'var(--bg-hover)', text: 'var(--text-secondary)' };
   const label = LABEL_MAP[key] ?? status;
 
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${cls}`}>
+    <span 
+      className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+      style={{ backgroundColor: colors.bg, color: colors.text }}
+    >
       {label}
     </span>
   );

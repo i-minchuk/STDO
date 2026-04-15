@@ -27,10 +27,10 @@ export default function Dashboard() {
   }, []);
 
   const stats = [
-    { label: 'Всего проектов', value: summary.total, icon: FolderOpen, color: 'blue', desc: 'За всё время' },
-    { label: 'Активных', value: summary.active, icon: Clock, color: 'indigo', desc: 'В разработке' },
-    { label: 'В зоне риска', value: summary.at_risk, icon: AlertTriangle, color: 'red', desc: 'Требуют внимания' },
-    { label: 'Завершено', value: summary.completed, icon: CheckCircle, color: 'green', desc: 'Успешно закрыты' },
+    { label: 'Всего проектов', value: summary.total, icon: FolderOpen, color: 'docs', desc: 'За всё время' },
+    { label: 'Активных', value: summary.active, icon: Clock, color: 'engineering', desc: 'В разработке' },
+    { label: 'В зоне риска', value: summary.at_risk, icon: AlertTriangle, color: 'audit', desc: 'Требуют внимания' },
+    { label: 'Завершено', value: summary.completed, icon: CheckCircle, color: 'success', desc: 'Успешно закрыты' },
   ];
 
   return (
@@ -38,8 +38,8 @@ export default function Dashboard() {
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Портфолио проектов</h1>
-          <p className="text-gray-500 mt-1 flex items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight page-title">Портфолио проектов</h1>
+          <p className="text-secondary-token mt-1 flex items-center gap-2">
             <Calendar size={14} />
             Обзор состояния проектов на {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
@@ -64,52 +64,53 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* PROJECTS TABLE */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <FolderOpen size={18} className="text-primary-600" />
-              Последние проекты
-            </h2>
-            <Button variant="ghost" size="sm" className="text-primary-600 font-semibold" onClick={() => navigate('/documents')}>
-              Все проекты <ArrowUpRight size={14} className="ml-1" />
-            </Button>
-          </div>
-          
-          <Card padding="none" className="overflow-hidden">
+        <div className="flex items-center justify-between px-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2 section-title">
+            <FolderOpen size={18} className="text-primary" />
+            Последние проекты
+          </h2>
+          <Button variant="ghost" size="sm" className="font-semibold" style={{ color: 'var(--primary)' }} onClick={() => navigate('/documents')}>
+            Все проекты <ArrowUpRight size={14} className="ml-1" />
+          </Button>
+        </div>
+
+          <Card padding="none" className="overflow-hidden surface-card">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50/50 border-b border-gray-100">
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Проект</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Заказчик</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Прогресс</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">SPI</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Риск</th>
+                  <tr className="border-b" style={{ backgroundColor: 'var(--bg-surface-2)', borderColor: 'var(--border-default)' }}>
+                    <th className="px-6 py-4 text-xs font-bold text-tertiary-token uppercase tracking-wider">Проект</th>
+                    <th className="px-6 py-4 text-xs font-bold text-tertiary-token uppercase tracking-wider hidden sm:table-cell">Заказчик</th>
+                    <th className="px-6 py-4 text-xs font-bold text-tertiary-token uppercase tracking-wider">Прогресс</th>
+                    <th className="px-6 py-4 text-xs font-bold text-tertiary-token uppercase tracking-wider">SPI</th>
+                    <th className="px-6 py-4 text-xs font-bold text-tertiary-token uppercase tracking-wider">Риск</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y" style={{ divideColor: 'var(--border-light)' }}>
                   {projects.map(p => (
                     <tr 
                       key={p.id} 
                       onClick={() => navigate(`/projects/${p.id}`)} 
-                      className="group hover:bg-primary-50/30 cursor-pointer transition-all duration-200"
+                      className="group cursor-pointer transition-all duration-200"
+                      style={{ '--tw-bg-opacity': '1', backgroundColor: 'transparent' } as any}
                     >
                       <td className="px-6 py-4">
-                        <div className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">{p.name}</div>
-                        <div className="text-xs text-gray-500 font-mono mt-0.5">{p.number}</div>
+                        <div className="font-semibold group-hover:text-primary transition-colors" style={{ color: 'var(--text-primary)' }}>{p.name}</div>
+                        <div className="text-xs font-mono mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{p.number}</div>
                       </td>
                       <td className="px-6 py-4 hidden sm:table-cell">
-                        <div className="text-sm text-gray-600">{p.customer}</div>
+                        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{p.customer}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1.5 min-w-[100px]">
-                          <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase">
+                          <div className="flex justify-between items-center text-[10px] font-bold text-tertiary-token uppercase">
                             <span>Задачи</span>
                             <span>{Math.round(p.total_tasks ? (p.completed_tasks / p.total_tasks * 100) : 0)}%</span>
                           </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden border border-gray-200/50">
+                          <div className="w-full rounded-full h-2 overflow-hidden border" style={{ backgroundColor: 'var(--bg-hover)', borderColor: 'var(--border-default)' }}>
                             <div 
-                              className="bg-primary-600 h-full rounded-full transition-all duration-500 ease-out shadow-sm" 
-                              style={{ width: `${p.total_tasks ? (p.completed_tasks / p.total_tasks * 100) : 0}%` }} 
+                              className="h-full rounded-full transition-all duration-500 ease-out" 
+                              style={{ width: `${p.total_tasks ? (p.completed_tasks / p.total_tasks * 100) : 0}%`, backgroundColor: 'var(--primary)' }} 
                             />
                           </div>
                         </div>
@@ -128,7 +129,7 @@ export default function Dashboard() {
               </table>
             </div>
             {projects.length === 0 && (
-              <div className="py-12 text-center text-gray-400 flex flex-col items-center gap-2">
+              <div className="py-12 text-center flex flex-col items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
                 <Info size={32} strokeWidth={1} />
                 <p>Нет активных проектов</p>
               </div>
@@ -140,14 +141,14 @@ export default function Dashboard() {
         <div className="space-y-6">
           <DailyQuestWidget />
           
-          <Card className="bg-primary-900 text-white overflow-hidden relative group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <Card className="overflow-hidden relative group" style={{ backgroundColor: 'var(--bg-surface-2)', borderColor: 'var(--border-default)' }}>
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity" style={{ color: 'var(--primary)' }}>
               <TrendingUp size={80} />
             </div>
             <div className="relative z-10">
-              <h3 className="font-bold text-lg mb-2">Общая эффективность</h3>
-              <p className="text-primary-200 text-sm mb-4">Средний SPI по всем проектам вырос на 4.2% за прошлую неделю.</p>
-              <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20 w-full">
+              <h3 className="font-bold text-lg mb-2 text-primary-token">Общая эффективность</h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>Средний SPI по всем проектам вырос на 4.2% за прошлую неделю.</p>
+              <Button variant="outline" size="sm" className="w-full" style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}>
                 Смотреть отчет
               </Button>
             </div>
@@ -162,24 +163,33 @@ export default function Dashboard() {
 
 function StatCard({ label, value, icon: Icon, color, desc }: any) {
   const colors: any = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-100 shadow-blue-100/50',
-    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100 shadow-indigo-100/50',
-    red: 'bg-red-50 text-red-700 border-red-100 shadow-red-100/50',
-    green: 'bg-green-50 text-green-700 border-green-100 shadow-green-100/50',
+    docs: { bg: 'var(--accent-docs-light)', text: 'var(--accent-docs)', border: 'var(--accent-docs)' },
+    engineering: { bg: 'var(--accent-engineering-light)', text: 'var(--accent-engineering)', border: 'var(--accent-engineering)' },
+    audit: { bg: 'var(--accent-audit-light)', text: 'var(--accent-audit)', border: 'var(--accent-audit)' },
+    success: { bg: 'var(--success-light)', text: 'var(--success)', border: 'var(--success)' },
+    leaders: { bg: 'var(--accent-leaders-light)', text: 'var(--accent-leaders)', border: 'var(--accent-leaders)' },
+    production: { bg: 'var(--accent-production-light)', text: 'var(--accent-production)', border: 'var(--accent-production)' },
+    approvals: { bg: 'var(--accent-approvals-light)', text: 'var(--accent-approvals)', border: 'var(--accent-approvals)' },
   };
 
+  const theme = colors[color] || colors.docs;
+
   return (
-    <Card className={`border shadow-sm transition-all hover:shadow-md hover:-translate-y-1 ${colors[color]}`} padding="sm">
+    <Card 
+      className="border shadow-sm transition-all hover:shadow-md hover:-translate-y-1 surface-card"
+      padding="sm"
+      style={{ backgroundColor: theme.bg, borderColor: theme.border }}
+    >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider opacity-70">{label}</p>
+          <p className="text-xs font-bold uppercase tracking-wider opacity-70" style={{ color: theme.text }}>{label}</p>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-black">{value}</span>
+            <span className="text-3xl font-black" style={{ color: theme.text }}>{value}</span>
           </div>
-          <p className="text-[10px] font-medium opacity-60 mt-1 italic">{desc}</p>
+          <p className="text-[10px] font-medium opacity-60 mt-1 italic" style={{ color: theme.text }}>{desc}</p>
         </div>
-        <div className={`p-2 rounded-lg bg-white/50 shadow-inner`}>
-          <Icon size={24} strokeWidth={2.5} />
+        <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }}>
+          <Icon size={24} strokeWidth={2.5} style={{ color: theme.text }} />
         </div>
       </div>
     </Card>
