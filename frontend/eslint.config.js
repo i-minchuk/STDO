@@ -20,4 +20,22 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ['**/*.css'],
+    rules: {
+      'at-rule-no-unknown': [
+        'error',
+        {
+          ignoreAtRules: [
+            'tailwind',
+            'apply',
+            'layer',
+            'variants',
+            'responsive',
+            'screen',
+          ],
+        },
+      ],
+    },
+  },
 ])

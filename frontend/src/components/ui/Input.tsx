@@ -17,8 +17,11 @@ export default function Input({
   error,
   helpText,
   className = '',
+  style,
   ...props
 }: InputProps) {
+  const hasError = Boolean(error);
+
   return (
     <div className={cn('w-full', className)}>
       {label ? (
@@ -35,17 +38,31 @@ export default function Input({
         id={id}
         {...props}
         className={cn(
-          'w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors',
-          error ? 'border-red-500' : ''
+          'w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors duration-150',
         )}
         style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: error ? 'var(--error)' : 'var(--border-default)',
+          backgroundColor: 'var(--bg-surface-2)',
+          borderColor: hasError ? 'var(--error)' : 'var(--border-default)',
           color: 'var(--text-primary)',
+          boxShadow: 'none',
+          ...style,
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.borderColor = hasError
+            ? 'var(--error)'
+            : 'var(--brand-iris)';
+          e.currentTarget.style.boxShadow =
+            '0 0 0 1px color-mix(in srgb, var(--brand-iris) 40%, transparent)';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderColor = hasError
+            ? 'var(--error)'
+            : 'var(--border-default)';
+          e.currentTarget.style.boxShadow = 'none';
         }}
       />
 
-      {error ? (
+      {hasError ? (
         <p className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
           {error}
         </p>

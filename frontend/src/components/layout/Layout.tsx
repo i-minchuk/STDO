@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Moon, Sun, Bell, User, LogOut, ChevronDown } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
-  children: ReactNode;
+  children?: React.ReactNode;
 }
 
 const navItems = [
@@ -13,33 +12,78 @@ const navItems = [
   { to: '/production', label: 'Производство' },
   { to: '/documents', label: 'Документооборот' },
   { to: '/approvals', label: 'Согласования' },
-  { to: '/audit', label: 'Аудит и контроль' },
+  { to: '/audit', label: 'Аудит' },
 ];
 
-export function Layout({ children }: LayoutProps) {
+export default function Layout({ children }: LayoutProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [unreadCount] = useState(3);
   const navigate = useNavigate();
+  const location = useLocation();
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('iris-theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+    try {
+      const savedTheme = localStorage.getItem('iris-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
 
-    setIsDarkMode(isDark);
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      setIsDarkMode(isDark);
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    } catch {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(prefersDark);
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        userMenuRef.current &&
+        event.target instanceof Node &&
+        !userMenuRef.current.contains(event.target)
+      ) {
+        setShowUserMenu(false);
+      }
+    };
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
   }, []);
 
   const toggleTheme = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
-    localStorage.setItem('iris-theme', newMode ? 'dark' : 'light');
+
+    try {
+      localStorage.setItem('iris-theme', newMode ? 'dark' : 'light');
+    } catch {
+      // ignore
+    }
+
     document.documentElement.setAttribute('data-theme', newMode ? 'dark' : 'light');
   };
 
   const handleLogout = () => {
+    setShowUserMenu(false);
     navigate('/login');
   };
+
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
     <div
@@ -50,7 +94,7 @@ export function Layout({ children }: LayoutProps) {
       }}
     >
       <header
-        className="sticky top-0 z-50 border-b"
+        className="sticky top-0 z-50 border-b backdrop-blur"
         style={{
           backgroundColor: 'var(--bg-topbar)',
           borderColor: 'var(--border-default)',
@@ -60,14 +104,16 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-6">
             <Link to="/dashboard" className="flex items-center gap-3 no-underline">
               <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold shadow-sm"
                 style={{
-                  background: 'linear-gradient(135deg, var(--primary), var(--accent-leaders))',
+                  background:
+                    'linear-gradient(135deg, var(--accent-leaders), var(--accent-docs))',
                   color: 'var(--text-inverse)',
                 }}
               >
                 IRIS
               </div>
+
               <div
                 className="text-lg font-semibold tracking-tight"
                 style={{ color: 'var(--text-inverse)' }}
@@ -76,63 +122,111 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </Link>
 
-            <div className="hidden lg:flex items-center gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="rounded-md px-3 py-2 text-sm font-medium transition-colors no-underline"
-                  style={{ color: 'var(--text-inverse)' }}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
+            <nav
+              className="hidden items-center gap-1 lg:flex"
+              aria-label="Главная навигация"
+            >
+              {navItems.map((item) => {
+                const active = isActive(item.to);
+
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className="rounded-md px-3 py-2 text-sm font-medium no-underline transition-colors duration-150"
+                    style={{
+                      color: 'var(--text-inverse)',
+                      backgroundColor: active
+                        ? 'var(--topbar-active)'
+                        : 'transparent',
+                    }}
+                    aria-current={active ? 'page' : undefined}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        (e.currentTarget as HTMLAnchorElement).style.backgroundColor =
+                          'var(--topbar-hover)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLAnchorElement).style.backgroundColor =
+                        active ? 'var(--topbar-active)' : 'transparent';
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
 
           <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Поиск..."
-              className="hidden md:block h-10 rounded-md border px-3 text-sm outline-none transition-colors"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                borderColor: 'rgba(255,255,255,0.08)',
-                color: 'var(--text-inverse)',
-              }}
-            />
-
             <button
               type="button"
               onClick={toggleTheme}
-              className="flex h-10 w-10 items-center justify-center rounded-md transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-md transition-colors duration-150"
               style={{ color: 'var(--topbar-icon)' }}
               aria-label="Переключить тему"
+              title={isDarkMode ? 'Светлая тема' : 'Тёмная тема'}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                  'var(--topbar-hover)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                  'transparent';
+              }}
             >
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
             <button
               type="button"
-              className="relative flex h-10 w-10 items-center justify-center rounded-md transition-colors"
+              className="relative flex h-10 w-10 items-center justify-center rounded-md transition-colors duration-150"
               style={{ color: 'var(--notification-icon)' }}
               aria-label="Уведомления"
+              title="Уведомления"
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                  'var(--topbar-hover)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                  'transparent';
+              }}
             >
               <Bell size={18} />
-              <span
-                className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: 'var(--notification-badge)' }}
-              />
+              {unreadCount > 0 ? (
+                <span
+                  className="absolute right-1.5 top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none"
+                  style={{
+                    backgroundColor: 'var(--notification-badge)',
+                    color: 'var(--text-inverse)',
+                    border: '1px solid var(--bg-topbar)',
+                  }}
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              ) : null}
             </button>
 
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 type="button"
                 onClick={() => setShowUserMenu((prev) => !prev)}
-                className="flex items-center gap-2 rounded-md px-2 py-2 transition-colors"
+                className="flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors duration-150"
                 style={{ color: 'var(--text-inverse)' }}
-                aria-label="Профиль"
+                aria-haspopup="menu"
                 aria-expanded={showUserMenu}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                    'var(--topbar-hover)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!showUserMenu) {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                      'transparent';
+                  }
+                }}
               >
                 <div
                   className="flex h-8 w-8 items-center justify-center rounded-full"
@@ -140,7 +234,7 @@ export function Layout({ children }: LayoutProps) {
                 >
                   <User size={16} />
                 </div>
-                <span className="hidden md:inline text-sm font-medium">Admin</span>
+                <span className="hidden md:inline">Admin</span>
                 <ChevronDown size={16} />
               </button>
 
@@ -152,10 +246,17 @@ export function Layout({ children }: LayoutProps) {
                     borderColor: 'var(--border-default)',
                     color: 'var(--text-primary)',
                   }}
+                  role="menu"
                 >
-                  <div className="border-b px-4 py-3" style={{ borderColor: 'var(--border-default)' }}>
+                  <div
+                    className="border-b px-4 py-3"
+                    style={{ borderColor: 'var(--border-default)' }}
+                  >
                     <div className="font-semibold">Admin User</div>
-                    <div style={{ color: 'var(--text-secondary)' }} className="text-sm">
+                    <div
+                      className="text-sm"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
                       admin@stdo-demo.com
                     </div>
                   </div>
@@ -163,11 +264,16 @@ export function Layout({ children }: LayoutProps) {
                   <div className="p-2">
                     <button
                       type="button"
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors"
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors duration-150"
                       style={{ color: 'var(--text-primary)' }}
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        navigate('/profile');
+                      role="menuitem"
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                          'var(--topbar-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                          'transparent';
                       }}
                     >
                       <User size={16} />
@@ -176,9 +282,18 @@ export function Layout({ children }: LayoutProps) {
 
                     <button
                       type="button"
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors"
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors duration-150"
                       style={{ color: 'var(--error)' }}
+                      role="menuitem"
                       onClick={handleLogout}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                          'var(--topbar-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                          'transparent';
+                      }}
                     >
                       <LogOut size={16} />
                       Выйти
@@ -189,35 +304,9 @@ export function Layout({ children }: LayoutProps) {
             </div>
           </div>
         </div>
-
-        <div
-          className="flex overflow-x-auto border-t px-2 py-1 lg:hidden"
-          style={{ borderColor: 'rgba(255,255,255,0.08)' }}
-        >
-          {navItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium no-underline"
-              style={{ color: 'var(--text-inverse)' }}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
       </header>
 
-      <main className="px-4 py-6 md:px-6">{children}</main>
-
-      <footer
-        className="border-t px-6 py-4 text-sm"
-        style={{
-          borderColor: 'var(--border-default)',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        © 2026 ДокПоток IRIS. Версия 0.3.0
-      </footer>
+      <main className="px-4 py-6 md:px-6">{children ?? <Outlet />}</main>
     </div>
   );
 }

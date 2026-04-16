@@ -53,7 +53,7 @@ export default function Modal({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 overflow-y-auto"
       role="dialog"
       aria-modal="true"
@@ -61,30 +61,57 @@ export default function Modal({
       data-testid="modal"
     >
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-text-base bg-opacity-50 transition-opacity"
+      <div
+        className="fixed inset-0 transition-opacity"
+        style={{
+          backgroundColor: 'rgba(17, 17, 27, 0.72)',
+          backdropFilter: 'blur(3px)',
+        }}
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div 
-          className={`relative w-full ${sizes[size]} bg-bg-card rounded-xl shadow-xl transform transition-all`}
+        <div
+          className={`relative w-full ${sizes[size]} rounded-xl border transition-all`}
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            borderColor: 'var(--border-default)',
+            boxShadow: 'var(--shadow-lg)',
+            color: 'var(--text-primary)',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
-            <h2 
+          <div
+            className="flex items-center justify-between px-6 py-4"
+            style={{ borderBottom: '1px solid var(--border-default)' }}
+          >
+            <h2
               id="modal-title"
-              className="text-lg font-semibold text-text-base"
+              className="text-lg font-semibold"
+              style={{ color: 'var(--text-primary)' }}
             >
               {title}
             </h2>
+
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg hover:bg-ghost-hover text-text-muted hover:text-text-base transition-colors"
+                className="rounded-lg p-2 transition-colors"
+                style={{
+                  color: 'var(--text-secondary)',
+                  backgroundColor: 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface-2)';
+                  e.currentTarget.style.color = 'var(--brand-iris)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
                 aria-label="Закрыть"
               >
                 <X size={20} />
@@ -93,13 +120,22 @@ export default function Modal({
           </div>
 
           {/* Content */}
-          <div className="px-6 py-4">
+          <div
+            className="px-6 py-4"
+            style={{ color: 'var(--text-primary)' }}
+          >
             {children}
           </div>
 
           {/* Footer */}
           {footer && (
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-light bg-bg-page rounded-b-xl">
+            <div
+              className="flex items-center justify-end gap-3 rounded-b-xl px-6 py-4"
+              style={{
+                borderTop: '1px solid var(--border-default)',
+                backgroundColor: 'var(--bg-surface-2)',
+              }}
+            >
               {footer}
             </div>
           )}
