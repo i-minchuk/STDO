@@ -1,173 +1,124 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import type { ViewerProps } from './types';
+import { VIEWER_CONFIGS } from './types';
+import { MockViewerBase } from './MockViewerBase';
+import { Toolbar } from './Toolbar';
+import { DragDropOverlay } from './DragDropOverlay';
+import styles from './viewer.module.css';
 
-interface ImageViewerProps {
-  file: File;
-}
+export const ImageViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock = false }) => {
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
+  const config = VIEWER_CONFIGS.image;
 
-export function ImageViewer({ file }: ImageViewerProps) {
-  const [scale, setScale] = useState(1.0);
-  const [rotation, setRotation] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    if (!fileUrl || mock) return;
 
-  const fileUrl = URL.createObjectURL(file);
+    setIsLoading(true);
+    setError(null);
 
-  const zoomIn = useCallback(() => {
-    setScale((prev) => Math.min(prev + 0.25, 4.0));
+    const img = new Image();
+    img.onload = () => {
+      setImageUrl(fileUrl);
+      setIsLoading(false);
+    };
+    img.onerror = () => {
+      setError('Не удалось загрузить изображение');
+      setIsLoading(false);
+    };
+    img.src = fileUrl;
+  }, [fileUrl, mock]);
+
+  const handleZoomIn = useCallback(() => setScale(s => Math.min(s + 0.25, 4)), []);
+  const handleZoomOut = useCallback(() => setScale(s => Math.max(s - 0.25, 0.25)), []);
+  const handleZoomReset = useCallback(() => setScale(1), []);
+
+  const handleDownload = useCallback(() => {
+    if (fileUrl) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = fileName;
+      link.click();
+    }
+  }, [fileUrl, fileName]);
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleFileDrop = useCallback((_file: File) => {
+    /* integration hook: delegate to workspace store if needed */
   }, []);
 
-  const zoomOut = useCallback(() => {
-    setScale((prev) => Math.max(prev - 0.25, 0.25));
-  }, []);
-
-  const resetView = useCallback(() => {
-    setScale(1.0);
-    setRotation(0);
-    setPosition({ x: 0, y: 0 });
-  }, []);
-
-  const rotateLeft = useCallback(() => {
-    setRotation((prev) => (prev - 90) % 360);
-  }, []);
-
-  const rotateRight = useCallback(() => {
-    setRotation((prev) => (prev + 90) % 360);
-  }, []);
-
-  return (
-    <div
-      className="flex-1 flex flex-col overflow-hidden"
-      style={{ backgroundColor: 'var(--bg-app)' }}
-    >
-      {/* Toolbar */}
-      <div
-        className="flex items-center justify-between px-4 py-2 border-b shrink-0"
-        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {file.name}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={zoomOut}
-            className="p-1.5 rounded transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Уменьшить"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              <line x1="8" y1="11" x2="14" y2="11" />
-            </svg>
-          </button>
-
-          <span
-            className="text-xs font-medium px-2"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {Math.round(scale * 100)}%
-          </span>
-
-          <button
-            onClick={zoomIn}
-            className="p-1.5 rounded transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Увеличить"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              <line x1="11" y1="8" x2="11" y2="14" />
-              <line x1="8" y1="11" x2="14" y2="11" />
-            </svg>
-          </button>
-
-          <div className="w-px h-4 mx-1" style={{ backgroundColor: 'var(--border-default)' }} />
-
-          <button
-            onClick={rotateLeft}
-            className="p-1.5 rounded transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Повернуть влево"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
-          </button>
-
-          <button
-            onClick={rotateRight}
-            className="p-1.5 rounded transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Повернуть вправо"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-              <path d="M21 3v5h-5" />
-            </svg>
-          </button>
-
-          <button
-            onClick={resetView}
-            className="p-1.5 rounded transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Сбросить"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
-          </button>
-        </div>
-
-        <a
-          href={fileUrl}
-          download={file.name}
-          className="p-1.5 rounded transition-colors"
-          style={{ color: 'var(--text-secondary)' }}
-          title="Скачать"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-        </a>
-      </div>
-
-      {/* Image Content */}
-      <div
-        className="flex-1 overflow-auto flex items-center justify-center p-4"
-        style={{ backgroundColor: '#1a1a1a' }}
-        onMouseDown={() => setIsDragging(true)}
-        onMouseUp={() => setIsDragging(false)}
-        onMouseLeave={() => setIsDragging(false)}
-      >
-        <img
-          src={fileUrl}
-          alt={file.name}
-          className="max-w-full transition-transform"
-          style={{
-            transform: `scale(${scale}) rotate(${rotation}deg) translate(${position.x}px, ${position.y}px)`,
-            cursor: isDragging ? 'grabbing' : 'grab',
-          }}
-          draggable={false}
+  // Mock mode
+  if (mock || !fileUrl) {
+    return (
+      <DragDropOverlay onFileDrop={handleFileDrop}>
+        <Toolbar
+          fileName={fileName}
+          fileType="image"
+          showZoom
+          zoom={scale}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onZoomReset={handleZoomReset}
+          onDownload={handleDownload}
         />
-      </div>
+        <div className={styles.content}>
+          <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor} accentColor={config.accentColor} fileUrl={fileUrl}>
+            <div className={styles.imageContainer}>
+              <div style={{ width: '300px', height: '200px', background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>🖼️</div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{fileName}</p>
+            </div>
+          </MockViewerBase>
+        </div>
+      </DragDropOverlay>
+    );
+  }
 
-      {/* Footer */}
-      <div
-        className="px-4 py-1.5 border-t text-xs text-center shrink-0"
-        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
-      >
-        <span style={{ color: 'var(--text-tertiary)' }}>
-          {file.name} · {Math.round(file.size / 1024)} KB · {Math.round(scale * 100)}%
-        </span>
+  // Loading state
+  if (isLoading) {
+    return (
+      <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor} accentColor={config.accentColor} fileUrl={fileUrl}>
+        <div className={styles.loading}>
+          <div className={styles.spinner} />
+          <span style={{ marginLeft: '12px' }}>Загрузка изображения...</span>
+        </div>
+      </MockViewerBase>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor} accentColor={config.accentColor} fileUrl={fileUrl}>
+        <div className={styles.emptyState}>
+          <p style={{ color: 'var(--error)' }}>{error}</p>
+          <a href={fileUrl} download={fileName} style={{ background: 'var(--accent-engineering)', color: 'var(--text-inverse)', padding: '8px 16px', borderRadius: '6px', textDecoration: 'none', marginTop: '12px', display: 'inline-block' }}>Скачать</a>
+        </div>
+      </MockViewerBase>
+    );
+  }
+
+  // Real image rendering
+  return (
+    <DragDropOverlay onFileDrop={handleFileDrop}>
+      <Toolbar
+        fileName={fileName}
+        fileType="image"
+        showZoom
+        zoom={scale}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomReset={handleZoomReset}
+        onDownload={handleDownload}
+      />
+      <div className={styles.content} style={{ backgroundColor: '#1a1a1a' }}>
+        <div className={styles.imageContainer}>
+          <img src={imageUrl} alt={fileName} style={{ maxWidth: `${scale * 100}%`, maxHeight: '100%', objectFit: 'contain' }} />
+        </div>
       </div>
-    </div>
+    </DragDropOverlay>
   );
-}
+};
+
+export default ImageViewer;

@@ -22,7 +22,11 @@ interface WorkspaceLayoutProps {
     totalRemarks: number;
     openRemarks: number;
   };
+  toolbarActions?: React.ReactNode;
   onNewTab?: () => void;
+  onNewRevision?: () => void;
+  onApprove?: () => void;
+  onVerify?: () => void;
 }
 
 export default function WorkspaceLayout({
@@ -31,7 +35,11 @@ export default function WorkspaceLayout({
   inspector,
   bottomPanel,
   documentData,
+  toolbarActions,
   onNewTab,
+  onNewRevision,
+  onApprove,
+  onVerify,
 }: WorkspaceLayoutProps) {
   const {
     explorerWidth,
@@ -43,7 +51,7 @@ export default function WorkspaceLayout({
     contentScale,
     setExplorerWidth,
     setInspectorWidth,
-    setBottomPanelHeight,
+    // setBottomPanelHeight - больше не используется, панель статична
   } = useWorkspaceStore();
 
   // Resizer для Explorer
@@ -54,9 +62,7 @@ export default function WorkspaceLayout({
   const inspectorResizerRef = useRef<HTMLDivElement>(null);
   const [isResizingInspector, setIsResizingInspector] = useState(false);
 
-  // Resizer для Bottom Panel
-  const bottomResizerRef = useRef<HTMLDivElement>(null);
-  const [isResizingBottom, setIsResizingBottom] = useState(false);
+  // Нижняя панель теперь статична - resizer удалён
 
   // Drag handlers для Explorer
   const startResizingExplorer = (e: React.MouseEvent) => {
@@ -91,33 +97,16 @@ export default function WorkspaceLayout({
     setInspectorWidth(newWidth);
   };
 
-  // Drag handlers для Bottom Panel
-  const startResizingBottom = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingBottom(true);
-  };
+  // Обработчики для нижней панели удалены - панель статична
 
-  const stopResizingBottom = () => {
-    setIsResizingBottom(false);
-  };
-
-  const resizeBottom = (e: MouseEvent) => {
-    if (!isResizingBottom) return;
-    const viewportHeight = window.innerHeight - 60;
-    const newHeight = viewportHeight - e.clientY;
-    setBottomPanelHeight(newHeight);
-  };
-
-  // Глобальные обработчики mouse events
+  // Глобальные обработчики mouse events - обновлено для без bottom panel resize
   useEffect(() => {
-    if (isResizingExplorer || isResizingInspector || isResizingBottom) {
+    if (isResizingExplorer || isResizingInspector) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
       document.body.style.cursor = isResizingExplorer
         ? 'col-resize'
-        : isResizingInspector
-        ? 'col-resize'
-        : 'row-resize';
+        : 'col-resize';
       document.body.style.userSelect = 'none';
     }
 
@@ -127,29 +116,26 @@ export default function WorkspaceLayout({
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-  }, [isResizingExplorer, isResizingInspector, isResizingBottom]);
+  }, [isResizingExplorer, isResizingInspector]);
 
   const handleMouseMove = (e: MouseEvent) => {
     if (isResizingExplorer) {
       resizeExplorer(e);
     } else if (isResizingInspector) {
       resizeInspector(e);
-    } else if (isResizingBottom) {
-      resizeBottom(e);
     }
   };
 
   const handleMouseUp = () => {
     stopResizingExplorer();
     stopResizingInspector();
-    stopResizingBottom();
   };
 
   // Масштаб контента
   const scaleValue = contentScale / 100;
 
   // Высота для центральной зоны (учитываем header и bottom panel)
-  const centralAreaHeight = `calc(100vh - 50px - ${bottomPanelCollapsed ? 0 : bottomPanelHeight}px)`;
+  const centralAreaHeight = `calc(100vh - 50px - ${bottomPanelHeight}px)`;
 
   return (
     <div
@@ -211,7 +197,25 @@ export default function WorkspaceLayout({
             }}
           >
             {/* Вкладки редактора */}
-            <EditorTabs onNewTab={onNewTab} />
+            <EditorTabs 
+              onNewTab={onNewTab} 
+              onNewRevision={onNewRevision}
+              onApprove={onApprove}
+              onVerify={onVerify}
+            />
+            
+            {/* Toolbar с действиями */}
+            {toolbarActions && (
+              <div
+                className="flex items-center gap-3 px-3 py-2 border-b overflow-x-auto"
+                style={{
+                  backgroundColor: 'var(--bg-surface-2)',
+                  borderColor: 'var(--border-default)',
+                }}
+              >
+                {toolbarActions}
+              </div>
+            )}
             
             {/* Metadata Bar - информация о документе сверху */}
             {documentData && (
@@ -252,30 +256,18 @@ export default function WorkspaceLayout({
           )}
         </div>
 
-        {/* Bottom Panel */}
+        {/* Bottom Panel - статичная, без resizer */}
         {!bottomPanelCollapsed && bottomPanel && (
-          <>
-            <div
-              ref={bottomResizerRef}
-              onMouseDown={startResizingBottom}
-              className="h-1 cursor-row-resize hover:bg-[var(--primary)] transition-colors shrink-0 z-10"
-              style={{ backgroundColor: 'transparent' }}
-              role="separator"
-              aria-orientation="horizontal"
-              title="Перетащите для изменения размера"
-            />
-
-            <div
-              className="shrink-0 overflow-y-auto border-t"
-              style={{
-                height: `${bottomPanelHeight}px`,
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-default)',
-              }}
-            >
-              {bottomPanel}
-            </div>
-          </>
+          <div
+            className="shrink-0 overflow-y-auto border-t"
+            style={{
+              height: `${bottomPanelHeight}px`,
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-default)',
+            }}
+          >
+            {bottomPanel}
+          </div>
         )}
       </div>
     </div>

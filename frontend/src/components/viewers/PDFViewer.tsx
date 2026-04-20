@@ -1,31 +1,39 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+// Vite специальный импорт: бандлер сам положит worker рядом с билдом
+// и вернёт его URL. Работает и в dev, и в production.
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import type { ViewerProps } from './types';
+import { VIEWER_CONFIGS } from './types';
+import { MockViewerBase } from './MockViewerBase';
+import { Toolbar } from './Toolbar';
+import { DragDropOverlay } from './DragDropOverlay';
+import styles from './viewer.module.css';
 
-// Настройка worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+// Настройка worker для PDF.js v5 (использует .mjs, не .js)
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-interface PDFViewerProps {
-  file: File;
+interface RenderedPage {
+  pageNum: number;
+  canvas: HTMLCanvasElement;
 }
 
-export function PDFViewer({ file }: PDFViewerProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [scale, setScale] = useState(1.0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+export const PDFViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock = false }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [scale, setScale] = useState(1.0);
+  const [renderedPages, setRenderedPages] = useState<Map<number, RenderedPage>>(new Map());
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const fileUrl = URL.createObjectURL(file);
+  const config = VIEWER_CONFIGS.pdf;
 
   // Загрузка PDF документа
   useEffect(() => {
+    if (!fileUrl || mock) return;
+
     const loadPDF = async () => {
       setIsLoading(true);
       setError(null);
@@ -36,234 +44,196 @@ export function PDFViewer({ file }: PDFViewerProps) {
         
         setPdfDoc(pdf);
         setTotalPages(pdf.numPages);
-        setIsLoading(false);
+        setCurrentPage(1);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Не удалось загрузить PDF');
+      } finally {
         setIsLoading(false);
       }
     };
 
     loadPDF();
+  }, [fileUrl, mock]);
 
-    return () => {
-      URL.revokeObjectURL(fileUrl);
-    };
-  }, [fileUrl]);
+  // Рендеринг текущей страницы + буфер (prev/next)
+  const renderPage = useCallback(async (pageNum: number) => {
+    if (!pdfDoc || !containerRef.current) return;
 
-  // Отрисовка страницы
+    try {
+      const cached = renderedPages.get(pageNum);
+      if (cached) return;
+
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale });
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d')!;
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({
+        canvasContext: context,
+        viewport,
+      } as any).promise;
+
+      setRenderedPages(prev => new Map(prev).set(pageNum, { pageNum, canvas }));
+    } catch (err) {
+      console.error(`Ошибка рендеринга страницы ${pageNum}:`, err);
+    }
+  }, [pdfDoc, scale, renderedPages]);
+
+  // Рендеринг текущей страницы и буфера
   useEffect(() => {
-    if (!pdfDoc || !canvasRef.current) return;
-
-    const renderPage = async (pageNum: number) => {
-      try {
-        const page = await pdfDoc.getPage(pageNum);
-        const canvas = canvasRef.current;
-        
-        if (!canvas) return;
-
-        const viewport = page.getViewport({ scale });
-        
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        const renderTask = page.render({
-          canvasContext: canvas.getContext('2d')!,
-          viewport,
-        } as any);
-        
-        await renderTask.promise;
-      } catch (err) {
-        console.error('Ошибка отрисовки страницы:', err);
-      }
-    };
+    if (!pdfDoc) return;
 
     renderPage(currentPage);
-  }, [pdfDoc, currentPage, scale]);
+    if (currentPage > 1) renderPage(currentPage - 1);
+    if (currentPage < totalPages) renderPage(currentPage + 1);
+  }, [pdfDoc, currentPage, totalPages, renderPage]);
 
-  const goToPreviousPage = useCallback(() => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
-  }, []);
+  // Очистка кэша при изменении масштаба
+  useEffect(() => {
+    setRenderedPages(new Map());
+  }, [scale]);
 
-  const goToNextPage = useCallback(() => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const handleZoomIn = useCallback(() => setScale(prev => Math.min(prev + 0.25, 3.0)), []);
+  const handleZoomOut = useCallback(() => setScale(prev => Math.max(prev - 0.25, 0.5)), []);
+  const handleZoomReset = useCallback(() => setScale(1.0), []);
+  const handlePrevPage = useCallback(() => setCurrentPage(prev => Math.max(prev - 1, 1)), []);
+  const handleNextPage = useCallback(() => setCurrentPage(prev => Math.min(prev + 1, totalPages)), [totalPages]);
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   }, [totalPages]);
 
-  const zoomIn = useCallback(() => {
-    setScale((prev) => Math.min(prev + 0.25, 3.0));
+  const handleDownload = useCallback(() => {
+    if (fileUrl) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = fileName;
+      link.click();
+    }
+  }, [fileUrl, fileName]);
+
+  // Для on-drop внутри уже открытого viewer можно принять новый файл через workspace store.
+  // Сейчас — no-op, чтобы не перезагружать страницу.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleFileDrop = useCallback((_file: File) => {
+    /* integration hook: delegate to workspace store if needed */
   }, []);
 
-  const zoomOut = useCallback(() => {
-    setScale((prev) => Math.max(prev - 0.25, 0.5));
-  }, []);
-
-  if (error) {
+  // Mock mode
+  if (mock || !fileUrl) {
     return (
-      <div
-        className="flex-1 flex items-center justify-center"
-        style={{ backgroundColor: 'var(--bg-app)' }}
-      >
-        <div className="text-center">
-          <p className="text-sm mb-2" style={{ color: 'var(--error)' }}>
-            Ошибка загрузки PDF: {error}
-          </p>
-          <a
-            href={fileUrl}
-            download={file.name}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: 'var(--accent-engineering)',
-              color: 'var(--text-inverse)',
-            }}
-          >
-            Скачать файл
-          </a>
+      <DragDropOverlay onFileDrop={handleFileDrop}>
+        <Toolbar
+          fileName={fileName}
+          fileType="pdf"
+          showZoom
+          zoom={scale}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onZoomReset={handleZoomReset}
+          showPagination
+          currentPage={1}
+          totalPages={5}
+          onPrevPage={handlePrevPage}
+          onNextPage={handleNextPage}
+          onPageChange={handlePageChange}
+          onDownload={handleDownload}
+        />
+        <div className={styles.content}>
+          <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor} accentColor={config.accentColor} fileUrl={fileUrl}>
+            <div className={styles.pdfContainer}>
+              <div className={styles.pdfPage} style={{ width: '595px', height: '842px', padding: '40px', display: 'flex', flexDirection: 'column' }}>
+                <h1 style={{ fontSize: '24px', marginBottom: '20px', color: '#333' }}>{fileName}</h1>
+                <div style={{ flex: 1 }}>
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} style={{ height: '12px', background: '#e5e5e5', marginBottom: '8px', borderRadius: '2px', width: `${100 - (i % 3) * 15}%` }} />
+                  ))}
+                  <div style={{ height: '150px', background: '#f5f5f5', margin: '20px 0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>Изображение</div>
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} style={{ height: '12px', background: '#e5e5e5', marginBottom: '8px', borderRadius: '2px', width: `${90 - i * 10}%` }} />
+                  ))}
+                </div>
+                <div style={{ fontSize: '12px', color: '#999', marginTop: 'auto' }}>Стр. 1 из ~5</div>
+              </div>
+            </div>
+          </MockViewerBase>
         </div>
-      </div>
+      </DragDropOverlay>
     );
   }
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor} accentColor={config.accentColor} fileUrl={fileUrl}>
+        <div className={styles.loading}>
+          <div className={styles.spinner} />
+          <span style={{ marginLeft: '12px' }}>Загрузка PDF...</span>
+        </div>
+      </MockViewerBase>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor} accentColor={config.accentColor} fileUrl={fileUrl}>
+        <div className={styles.emptyState}>
+          <p style={{ color: 'var(--error)', marginBottom: '12px' }}>Ошибка: {error}</p>
+          {fileUrl && (
+            <a href={fileUrl} download={fileName} style={{ background: 'var(--accent-engineering)', color: 'var(--text-inverse)', padding: '8px 16px', borderRadius: '6px', textDecoration: 'none' }}>Скачать файл</a>
+          )}
+        </div>
+      </MockViewerBase>
+    );
+  }
+
+  // Real PDF rendering
+  const currentPageData = renderedPages.get(currentPage);
+
   return (
-    <div
-      className="flex-1 flex flex-col overflow-hidden"
-      style={{ backgroundColor: 'var(--bg-app)' }}
-    >
-      {/* Toolbar */}
-      <div
-        className="flex items-center justify-between px-4 py-2 border-b shrink-0"
-        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {file.name}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={zoomOut}
-            disabled={scale <= 0.5}
-            className="p-1.5 rounded transition-colors disabled:opacity-50"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Уменьшить масштаб"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              <line x1="8" y1="11" x2="14" y2="11" />
-            </svg>
-          </button>
-
-          <span
-            className="text-xs font-medium px-2"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {Math.round(scale * 100)}%
-          </span>
-
-          <button
-            onClick={zoomIn}
-            disabled={scale >= 3.0}
-            className="p-1.5 rounded transition-colors disabled:opacity-50"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Увеличить масштаб"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              <line x1="11" y1="8" x2="11" y2="14" />
-              <line x1="8" y1="11" x2="14" y2="11" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={goToPreviousPage}
-            disabled={currentPage <= 1}
-            className="p-1.5 rounded transition-colors disabled:opacity-50"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Предыдущая страница"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15 18 8 12 15 6" />
-            </svg>
-          </button>
-
-          <span
-            className="text-xs font-medium"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {currentPage} / {totalPages || '-'}
-          </span>
-
-          <button
-            onClick={goToNextPage}
-            disabled={currentPage >= totalPages}
-            className="p-1.5 rounded transition-colors disabled:opacity-50"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Следующая страница"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 18 16 12 9 6" />
-            </svg>
-          </button>
-        </div>
-
-        <a
-          href={fileUrl}
-          download={file.name}
-          className="p-1.5 rounded transition-colors"
-          style={{ color: 'var(--text-secondary)' }}
-          title="Скачать"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-        </a>
-      </div>
-
-      {/* PDF Content */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-auto p-4"
-        style={{ backgroundColor: '#525659', display: 'flex', justifyContent: 'center' }}
-      >
-        {isLoading && (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div
-                className="w-8 h-8 border-2 border-t-2 rounded-full animate-spin mx-auto mb-2"
-                style={{ borderColor: 'var(--border-default)', borderTopColor: 'var(--accent-engineering)' }}
-              />
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Загрузка PDF...
-              </p>
-            </div>
+    <DragDropOverlay onFileDrop={handleFileDrop}>
+      <Toolbar
+        fileName={fileName}
+        fileType="pdf"
+        showZoom
+        zoom={scale}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomReset={handleZoomReset}
+        showPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPrevPage={handlePrevPage}
+        onNextPage={handleNextPage}
+        onPageChange={handlePageChange}
+        onDownload={handleDownload}
+      />
+      <div ref={containerRef} className={styles.content} style={{ backgroundColor: '#525659' }}>
+        {currentPageData ? (
+          <canvas
+            ref={(el) => {
+              if (el && currentPageData) {
+                el.width = currentPageData.canvas.width;
+                el.height = currentPageData.canvas.height;
+                const ctx = el.getContext('2d');
+                if (ctx) ctx.drawImage(currentPageData.canvas, 0, 0);
+              }
+            }}
+            className={styles.pdfPage}
+            style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
+          />
+        ) : (
+          <div className={styles.loading}>
+            <div className={styles.spinner} />
+            <span style={{ marginLeft: '12px' }}>Рендеринг...</span>
           </div>
         )}
-
-        {!isLoading && !error && pdfDoc && (
-          <canvas
-            ref={canvasRef}
-            className="shadow-lg"
-            style={{ maxHeight: 'calc(100vh - 200px)' }}
-          />
-        )}
       </div>
-
-      {/* Footer */}
-      <div
-        className="px-4 py-1.5 border-t text-xs text-center shrink-0"
-        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
-      >
-        {totalPages > 0 && (
-          <span style={{ color: 'var(--text-tertiary)' }}>
-            {file.name} · {totalPages} страниц
-          </span>
-        )}
-      </div>
-    </div>
+    </DragDropOverlay>
   );
-}
+};
+
+export default PDFViewer;

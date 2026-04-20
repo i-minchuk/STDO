@@ -12,6 +12,7 @@ export interface Tab {
   isDirty?: boolean; // есть несохранённые изменения
   onClose?: () => void;
   file?: File; // Файл для viewer
+  documentId?: number; // Ссылка на документ из БД
 }
 
 export interface WorkspaceState {
@@ -53,5 +54,7 @@ export interface ExplorerNode {
   count?: number;
   children?: ExplorerNode[];
   expanded?: boolean;
+  active?: boolean; // Явное active state для документа
   icon?: React.ReactNode;
+  documentId?: number; // Ссылка на документ (для узлов типа document)
 }

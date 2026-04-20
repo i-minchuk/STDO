@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 /**
  * E2E Test: Документный Флоу (Happy Path)
@@ -174,7 +174,7 @@ test.describe('Document Workflow E2E', () => {
   });
 
   // --- Cleanup: Delete Test Data ---
-  test.afterAll(async ({ page }) => {
+  test.afterAll(async () => {
     // Note: In real scenario, you would delete test data via API
     // For now, we just log the test IDs
     console.log(`Test data created: Project ${testProjectId}, Document ${testDocumentId}`);

@@ -25,8 +25,11 @@ export default function AdminUsers() {
       setShowModal(false);
       setForm({ username: '', email: '', password: '', full_name: '', role: 'engineer' });
       load();
-    } catch {}
+    } catch (error) {
+      console.error('Failed to create user', error);
+    }
   };
+
 
   const handleDeactivate = async (id: number) => {
     if (confirm('Деактивировать пользователя?')) {

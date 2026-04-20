@@ -4,9 +4,17 @@ import type { Tab } from './types/workspace.types';
 
 interface EditorTabsProps {
   onNewTab?: () => void;
+  onNewRevision?: () => void;
+  onApprove?: () => void;
+  onVerify?: () => void;
 }
 
-export default function EditorTabs({ onNewTab }: EditorTabsProps) {
+export default function EditorTabs({ 
+  onNewTab, 
+  onNewRevision,
+  onApprove,
+  onVerify
+}: EditorTabsProps) {
   const { openTabs, activeTabId, setActiveTab, removeTab } = useWorkspaceStore();
 
   if (openTabs.length === 0) {
@@ -28,7 +36,7 @@ export default function EditorTabs({ onNewTab }: EditorTabsProps) {
             onClick={onNewTab}
             className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors"
             style={{ color: 'var(--text-secondary)' }}
-            title="Открыть новый таб"
+            title="Создать документ"
           >
             <Plus size={14} />
           </button>
@@ -48,6 +56,7 @@ export default function EditorTabs({ onNewTab }: EditorTabsProps) {
       role="tablist"
       aria-label="Открытые вкладки"
     >
+      {/* Вкладки слева */}
       <div className="flex items-center gap-1 px-1 flex-1 overflow-x-auto">
         {openTabs.map((tab) => (
           <TabItem
@@ -58,19 +67,66 @@ export default function EditorTabs({ onNewTab }: EditorTabsProps) {
             onClose={() => removeTab(tab.id)}
           />
         ))}
+        
+        {/* Кнопка создания нового документа рядом с вкладками */}
+        {onNewTab && (
+          <button
+            onClick={onNewTab}
+            className="p-1.5 m-0.5 rounded hover:bg-[var(--bg-hover)] transition-colors shrink-0 flex items-center gap-1 text-xs font-medium"
+            style={{ color: 'var(--text-secondary)' }}
+            title="Создать документ"
+            aria-label="Создать документ"
+          >
+            <Plus size={14} />
+            <span>Создать документ</span>
+          </button>
+        )}
       </div>
 
-      {onNewTab && (
-        <button
-          onClick={onNewTab}
-          className="p-1.5 m-0.5 rounded hover:bg-[var(--bg-hover)] transition-colors shrink-0"
-          style={{ color: 'var(--text-secondary)' }}
-          title="Открыть новый таб"
-          aria-label="Открыть новый таб"
-        >
-          <Plus size={14} />
-        </button>
-      )}
+      {/* Быстрые действия справа */}
+      <div className="flex items-center gap-1 px-2 shrink-0 border-l" style={{ borderColor: 'var(--border-default)' }}>
+        {onNewRevision && (
+          <button
+            onClick={onNewRevision}
+            className="px-3 py-1 rounded-lg text-xs font-medium transition-colors shrink-0"
+            style={{
+              backgroundColor: 'var(--accent-engineering)',
+              color: 'var(--text-inverse)',
+            }}
+            title="Создать новую ревизию"
+          >
+            Создать новую ревизию
+          </button>
+        )}
+        
+        {onApprove && (
+          <button
+            onClick={onApprove}
+            className="px-3 py-1 rounded-lg text-xs font-medium transition-colors shrink-0"
+            style={{
+              backgroundColor: 'var(--success)',
+              color: 'var(--text-inverse)',
+            }}
+            title="Направить на согласование"
+          >
+            Направить на согласование
+          </button>
+        )}
+        
+        {onVerify && (
+          <button
+            onClick={onVerify}
+            className="px-3 py-1 rounded-lg text-xs font-medium transition-colors shrink-0"
+            style={{
+              backgroundColor: 'var(--warning)',
+              color: 'var(--text-inverse)',
+            }}
+            title="Направить на проверку"
+          >
+            Направить на проверку
+          </button>
+        )}
+      </div>
     </div>
   );
 }

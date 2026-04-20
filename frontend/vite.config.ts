@@ -3,6 +3,17 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    port: 5173,
+    strictPort: true,
+    host: true,
+  },
+  css: {
+    modules: {
+      // kebab-case в *.module.css => camelCase в JS (styles.pdfContainer -> .pdf-container)
+      localsConvention: 'camelCaseOnly',
+    },
+  },
   build: {
     chunkSizeWarningLimit: 900,
     rollupOptions: {

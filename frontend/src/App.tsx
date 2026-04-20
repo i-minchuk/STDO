@@ -1,16 +1,18 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import Layout from './components/Layout';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
 
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Documents = lazy(() => import('./pages/Documents'));
-const DocumentDetail = lazy(() => import('./pages/DocumentDetail'));
+const DocumentCreate = lazy(() => import('./pages/DocumentCreate'));
 const Projects = lazy(() => import('./pages/Projects'));
 const ImportExcel = lazy(() => import('./pages/ImportExcel'));
 const Achievements = lazy(() => import('./pages/Achievements'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const DocumentWorkspace = lazy(() => import('./components/workspace/DocumentWorkspace'));
+const Layout = lazy(() => import('./components/Layout'));
 
 function PageLoader() {
   return (
@@ -99,10 +101,10 @@ export default function App() {
             />
 
             <Route
-              path="documents/:id"
+              path="documents/new"
               element={
                 <AppShell>
-                  <DocumentDetail />
+                  <DocumentCreate />
                 </AppShell>
               }
             />
@@ -134,6 +136,15 @@ export default function App() {
               }
             />
           </Route>
+
+          <Route
+            path="/documents/workspace/:projectId"
+            element={
+              <ProtectedRoute>
+                <DocumentWorkspace />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -363,9 +363,18 @@ textarea::placeholder {
 
 /* + фокус завязан на brand-iris и border-focus */
 :focus-visible {
-  outline: 2px solid var(--brand-iris);
+  outline: 2px solid var(--accent-engineering);
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: 4px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-engineering);
+  outline-offset: 2px;
 }
 
 /* Generic containers that might otherwise appear white */

@@ -7,6 +7,7 @@ export { default as ExplorerSidebar } from './ExplorerSidebar';
 export { default as InspectorPanel } from './InspectorPanel';
 export { default as ScaleControl } from './ScaleControl';
 export { default as BottomPanel } from './BottomPanel';
+export { default as DocumentWorkspace } from './DocumentWorkspace';
 export { useWorkspaceStore } from './store/workspaceStore';
 export type { Tab, WorkspaceState, ExplorerNode } from './types/workspace.types';
-export type { ContentScale } from './store/workspaceStore';
+export type { ContentScale, SelectedDocument } from './store/workspaceStore';

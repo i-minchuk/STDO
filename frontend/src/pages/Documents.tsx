@@ -476,27 +476,27 @@ export default function Documents() {
                     <td
                       className="whitespace-nowrap px-6 py-4 text-sm font-medium"
                       style={{ color: 'var(--text-primary)' }}
-                      onClick={() => navigate(`/documents/${d.id}`)}
+                      onClick={() => navigate(`/documents/workspace/${d.project_id || 1}`)}
                     >
                       {d.code}
                     </td>
                     <td
                       className="whitespace-nowrap px-6 py-4 text-sm"
                       style={{ color: 'var(--text-secondary)' }}
-                      onClick={() => navigate(`/documents/${d.id}`)}
+                      onClick={() => navigate(`/documents/workspace/${d.project_id || 1}`)}
                     >
                       {d.title}
                     </td>
                     <td
                       className="whitespace-nowrap px-6 py-4 text-sm"
                       style={{ color: 'var(--text-tertiary)' }}
-                      onClick={() => navigate(`/documents/${d.id}`)}
+                      onClick={() => navigate(`/documents/workspace/${d.project_id || 1}`)}
                     >
                       {d.doc_type || '—'}
                     </td>
                     <td
                       className="whitespace-nowrap px-6 py-4"
-                      onClick={() => navigate(`/documents/${d.id}`)}
+                      onClick={() => navigate(`/documents/workspace/${d.project_id || 1}`)}
                     >
                       <Badge variant={mapStatusToBadgeVariant(d.status)}>
                         {mapStatusToBadgeLabel(d.status)}

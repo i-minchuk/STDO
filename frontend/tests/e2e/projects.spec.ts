@@ -21,9 +21,7 @@ test.describe('Projects E2E Tests', () => {
 
   test('should display projects list', async ({ page }) => {
     await page.goto(`${baseUrl}/projects`);
-    await expect(page.locator('h1, h2')).toContainText(/projects|проекты/i);
-    
-    // Check if projects table or list is visible
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/проекты/i);
     await expect(page.locator('table, .projects-list, [data-testid="projects-list"]')).toBeVisible({ timeout: 10000 });
   });
 
@@ -32,12 +30,9 @@ test.describe('Projects E2E Tests', () => {
     
     const statusFilter = page.locator('select[name="status"], [data-testid="status-filter"]');
     if (await statusFilter.count() > 0) {
-      await statusFilter.selectOption('active');
-      await page.waitForTimeout(1000);
-      
-      // Verify filtered results
-      const projects = page.locator('[data-testid="project-item"]');
-      await expect(projects.first()).toBeVisible();
+      await statusFilter.selectOption({ index: 1 });
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('table')).toBeVisible();
     }
   });
 

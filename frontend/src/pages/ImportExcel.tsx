@@ -83,8 +83,10 @@ const MOCK_SHEETS: ExcelSheet[] = [
   },
 ];
 
-async function parseExcelFile(_file: File): Promise<{ sheets: ExcelSheet[] }> {
+async function parseExcelFile(file: File): Promise<{ sheets: ExcelSheet[] }> {
+  void file;
   return new Promise((resolve) => {
+
     setTimeout(() => {
       resolve({ sheets: MOCK_SHEETS });
     }, 700);
@@ -104,12 +106,13 @@ export default function ImportExcel() {
   const [newCustomColName, setNewCustomColName] = useState('');
 
   const selectedColumns = selectedSheet?.columns ?? [];
-  const selectedRows = selectedSheet?.rows ?? [];
 
   const mappedPreview = useMemo(() => {
+    const selectedRowsData = selectedSheet?.rows ?? [];
     if (!selectedSheet) return [];
 
-    return selectedRows.slice(0, 5).map((row) => {
+    return selectedRowsData.slice(0, 5).map((row) => {
+
       const result: Record<string, string | number | null> = {};
 
       Object.entries(mappings).forEach(([targetField, sourceColumnKey]) => {
@@ -122,7 +125,8 @@ export default function ImportExcel() {
 
       return result;
     });
-  }, [selectedRows, mappings, customCols, selectedSheet]);
+  }, [mappings, customCols, selectedSheet]);
+
 
   const requiredMissing = useMemo(() => {
     return TARGET_FIELDS

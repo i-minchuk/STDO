@@ -115,7 +115,7 @@ export default function BottomPanel({}: BottomPanelProps) {
 }
 
 interface HistoryContentProps {
-  history: any[];
+  history: Array<Record<string, unknown>>;
 }
 
 function HistoryContent({ history }: HistoryContentProps) {

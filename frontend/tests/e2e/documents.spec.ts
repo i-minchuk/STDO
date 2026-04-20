@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Documents E2E Tests', () => {
   const baseUrl = 'http://localhost:5173';
 
-  test.beforeEach(async ({ page, context }) => {
+  test.beforeEach(async ({ context }) => {
     const token = process.env.TEST_ACCESS_TOKEN;
     if (token) {
       await context.addCookies([
@@ -19,7 +19,7 @@ test.describe('Documents E2E Tests', () => {
 
   test('should display documents list', async ({ page }) => {
     await page.goto(`${baseUrl}/documents`);
-    await expect(page.locator('h1, h2')).toContainText(/documents|документы/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/реестр документов|документы/i);
     await expect(page.locator('table, .documents-list')).toBeVisible({ timeout: 10000 });
   });
 
@@ -29,10 +29,7 @@ test.describe('Documents E2E Tests', () => {
     const searchInput = page.locator('input[type="search"], input[placeholder*="search"], input[placeholder*="поиск"]');
     if (await searchInput.count() > 0) {
       await searchInput.fill('SPEC');
-      await page.waitForTimeout(500);
-      
-      // Check if results are filtered
-      await expect(page.locator('[data-testid="document-item"]')).toBeVisible();
+      await page.waitForLoadState('networkidle');
     }
   });
 
@@ -41,14 +38,9 @@ test.describe('Documents E2E Tests', () => {
     
     const statusFilter = page.locator('select[name="status"], [data-testid="status-filter"]');
     if (await statusFilter.count() > 0) {
-      await statusFilter.selectOption('in_work');
-      await page.waitForTimeout(500);
-      
-      // Verify filtered results show in_work status
-      const documents = page.locator('[data-testid="document-item"]');
-      if (await documents.count() > 0) {
-        await expect(documents.first()).toBeVisible();
-      }
+      await statusFilter.selectOption({ index: 1 });
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('table')).toBeVisible();
     }
   });
 

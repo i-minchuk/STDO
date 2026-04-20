@@ -35,11 +35,7 @@ const MOCK_NOTIFICATIONS: LocalNotification[] = [
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<LocalNotification[]>([]);
-
-  useEffect(() => {
-    setNotifications(MOCK_NOTIFICATIONS);
-  }, []);
+  const [notifications] = useState<LocalNotification[]>(MOCK_NOTIFICATIONS);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.is_read).length,

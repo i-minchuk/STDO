@@ -36,7 +36,7 @@ export default function TenderAssess() {
   const removeDoc = (i: number) => setDocs(docs.filter((_, idx) => idx !== i));
   const updateDoc = (i: number, field: keyof TenderDoc, value: string | number) => {
     const updated = [...docs];
-    (updated[i] as any)[field] = value;
+    (updated[i] as TenderDoc)[field] = value;
     setDocs(updated);
   };
 

@@ -1,10 +1,11 @@
 import { WorkspaceLayout, ExplorerSidebar, InspectorPanel, BottomPanel, EditorArea, useWorkspaceStore } from '../components/workspace';
 import { FileText } from 'lucide-react';
 import { useState } from 'react';
+import type { Remark } from '../components/RemarksPanel';
 
 export default function Projects() {
   const { addTab } = useWorkspaceStore();
-  const [selectedRemark, setSelectedRemark] = useState<any>(null);
+  const [selectedRemark, setSelectedRemark] = useState<Remark | null>(null);
 
   const handleNewTab = () => {
     addTab({

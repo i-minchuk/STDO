@@ -29,11 +29,9 @@ export default function Layout({ children }: LayoutProps) {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
 
-      setIsDarkMode(isDark);
       document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     } catch {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setIsDarkMode(prefersDark);
       document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
     }
   }, []);

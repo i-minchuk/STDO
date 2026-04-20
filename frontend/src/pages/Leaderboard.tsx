@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getLeaderboard } from '../api/gamification';
 import type { LeaderboardEntry } from '../types';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+
 import { Trophy, Medal, Award } from 'lucide-react';
 
 const MOCK_BOARD: LeaderboardEntry[] = [

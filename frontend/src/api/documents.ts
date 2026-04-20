@@ -1,5 +1,6 @@
 import client from './client';
 import type { Document, DocumentDetail, Revision } from '../types';
+import type { Remark } from '../components/RemarksPanel';
 
 export const getDocuments = async (params?: { project_id?: number; status?: string; search?: string }): Promise<Document[]> => {
   const { data } = await client.get('/api/documents/', { params });
@@ -56,5 +57,17 @@ export const approveRevision = async (
 
 export const getRevisions = async (documentId: number): Promise<Revision[]> => {
   const { data } = await client.get(`/api/documents/${documentId}/revisions`);
+  return data;
+};
+
+// API для замечаний по документу
+export const getRemarksByDocument = async (documentId: number): Promise<Remark[]> => {
+  const { data } = await client.get(`/api/remarks/document/${documentId}`);
+  return data;
+};
+
+// API для замечаний по проекту (для backward compatibility)
+export const getRemarksByProject = async (projectId: number): Promise<Remark[]> => {
+  const { data } = await client.get(`/api/remarks/project/${projectId}`);
   return data;
 };

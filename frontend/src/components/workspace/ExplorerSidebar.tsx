@@ -3,7 +3,10 @@ import { Folder, FileText, CheckSquare, MessageSquare } from 'lucide-react';
 import { useEffect } from 'react';
 
 interface ExplorerSidebarProps {
-  projectId?: string;
+  projectId?: number;
+  onNodeClick?: (nodeId: string, nodeType: string, documentId?: number) => void;
+  activeNodeId?: string | null;
+  onCreateDocument?: () => void;
 }
 
 // Мок-данные определены вне компонента, чтобы не пересоздавались
@@ -41,6 +44,10 @@ const INITIAL_EXPLORER_DATA = [
                     label: 'КМ1-А01',
                     code: 'КМ1-А01',
                     status: 'approved',
+                    fileName: 'КМ1-А01.pdf',
+                    fileType: 'pdf',
+                    fileSize: 2456789,
+                    documentId: 1, // Ссылка на документ из БД
                   },
                   {
                     id: 'doc-km1-002',
@@ -48,6 +55,21 @@ const INITIAL_EXPLORER_DATA = [
                     label: 'КМ1-А02',
                     code: 'КМ1-А02',
                     status: 'in-review',
+                    fileName: 'КМ1-А02.png',
+                    fileType: 'image',
+                    fileSize: 1234567,
+                    documentId: 2,
+                  },
+                  {
+                    id: 'doc-km1-003',
+                    type: 'document' as const,
+                    label: 'КМ1-А03',
+                    code: 'КМ1-А03',
+                    status: 'draft',
+                    fileName: 'КМ1-А03.xlsx',
+                    fileType: 'excel',
+                    fileSize: 456789,
+                    documentId: 3,
                   },
                 ],
               },
@@ -56,6 +78,30 @@ const INITIAL_EXPLORER_DATA = [
                 type: 'section' as const,
                 label: 'Раздел КМ2',
                 status: 'approval',
+                children: [
+                  {
+                    id: 'doc-km2-001',
+                    type: 'document' as const,
+                    label: 'КМ2-Б01',
+                    code: 'КМ2-Б01',
+                    status: 'in-progress',
+                    fileName: 'КМ2-Б01.dwg',
+                    fileType: 'dwg',
+                    fileSize: 8765432,
+                    documentId: 4,
+                  },
+                  {
+                    id: 'doc-km2-002',
+                    type: 'document' as const,
+                    label: 'КМ2-Б02',
+                    code: 'КМ2-Б02',
+                    status: 'draft',
+                    fileName: 'КМ2-Б02.docx',
+                    fileType: 'word',
+                    fileSize: 234567,
+                    documentId: 5,
+                  },
+                ],
               },
             ],
           },
@@ -64,6 +110,19 @@ const INITIAL_EXPLORER_DATA = [
             type: 'kit' as const,
             label: 'Комплект КЖ',
             count: 89,
+            children: [
+              {
+                id: 'doc-kj-001',
+                type: 'document' as const,
+                label: 'КЖ-001',
+                code: 'КЖ-001',
+                status: 'approved',
+                fileName: 'КЖ-001.pdf',
+                fileType: 'pdf',
+                fileSize: 3456789,
+                documentId: 6,
+              },
+            ],
           },
         ],
       },
@@ -90,7 +149,12 @@ const INITIAL_EXPLORER_DATA = [
   },
 ];
 
-export default function ExplorerSidebar({}: ExplorerSidebarProps) {
+export default function ExplorerSidebar({ 
+  projectId: _projectId, 
+  onNodeClick, 
+  activeNodeId,
+  onCreateDocument,
+}: ExplorerSidebarProps) {
   const { explorerData, activeExplorerNode, setActiveExplorerNode, toggleExplorerNode, addTab, setExplorerData } =
     useWorkspaceStore();
 
@@ -138,29 +202,59 @@ export default function ExplorerSidebar({}: ExplorerSidebarProps) {
     }
   };
 
-  const handleNodeClick = (node: any, hasChildren: boolean) => {
-    setActiveExplorerNode(node.id);
-    
-    // Если это документ, открываем его во вкладке
-    if (node.type === 'document') {
-      addTab({
-        id: node.id,
-        type: 'document',
-        title: node.label,
-        subtitle: node.code || node.status,
-        icon: <FileText size={14} />,
-        file: node.file, // Передаём файл если есть
-      });
-    } else if (hasChildren) {
-      // Если это папка с children, разворачиваем/сворачиваем
-      toggleExplorerNode(node.id);
+  const handleNodeClick = (node: Record<string, unknown>, hasChildren: boolean) => {
+    // Использовать внешний callback если передан
+    if (onNodeClick) {
+      onNodeClick(node.id, node.type, node.documentId);
+    } else {
+      // Локальная логика для backward compatibility
+      setActiveExplorerNode(node.id);
+      
+      if (node.type === 'document') {
+        const mockFile = node.fileName
+          ? new File(['mock file content'], node.fileName, {
+              type: getFileMimeType(node.fileType),
+            })
+          : undefined;
+
+        addTab({
+          id: node.id,
+          type: 'document',
+          title: node.label,
+          subtitle: node.code || node.status,
+          icon: <FileText size={14} />,
+          file: mockFile,
+          documentId: node.documentId,
+        });
+      } else if (hasChildren) {
+        toggleExplorerNode(node.id);
+      }
     }
   };
 
-  const renderTree = (nodes: any[], level: number = 0) => {
+  // Helper для получения mime type по расширению
+  function getFileMimeType(fileType: string): string {
+    switch (fileType) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'image':
+        return 'image/png';
+      case 'excel':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'word':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'dwg':
+        return 'application/acad';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  const renderTree = (nodes: Array<Record<string, unknown>>, level: number = 0) => {
     return nodes.map((node) => {
       const hasChildren = node.children && node.children.length > 0;
-      const isActive = node.id === activeExplorerNode;
+      // Использовать внешний activeNodeId если передан
+      const isActive = (activeNodeId !== undefined ? activeNodeId === node.id : node.id === activeExplorerNode);
       const isExpanded = node.expanded ?? true;
 
       return (
@@ -266,17 +360,30 @@ export default function ExplorerSidebar({}: ExplorerSidebarProps) {
       role="tree"
       aria-label="Обозреватель проектов"
     >
-      {/* Header с поиском */}
+      {/* Header с поиском и кнопкой создания */}
       <div
         className="px-2.5 py-2 border-b"
         style={{ borderColor: 'var(--border-default)' }}
       >
-        <h3
-          className="text-xs font-semibold mb-1.5"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          Проекты
-        </h3>
+        <div className="flex items-center justify-between mb-1.5">
+          <h3
+            className="text-xs font-semibold"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Проекты
+          </h3>
+          <button
+            onClick={onCreateDocument}
+            className="p-1 rounded hover:opacity-80 transition-opacity"
+            style={{ backgroundColor: 'var(--accent-engineering)', color: 'var(--text-inverse)' }}
+            title="Создать новый документ"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
 
         {/* Поиск */}
         <input

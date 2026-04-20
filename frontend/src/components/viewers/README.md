@@ -1,231 +1,202 @@
-# Document Viewers - STDO
+# Document Viewers
 
-Компоненты для просмотра документов в центральной рабочей области workspace.
-
-## Архитектура
-
-### DocumentViewerHost
-
-Единый host-компонент, который:
-- Принимает выбранный документ через active tab
-- Определяет тип файла (по расширению и mime type)
-- Рендерит соответствующий viewer компонент
-- Показывает состояния: loading, error, empty, unsupported
-
-### Определение типа файла
-
-```typescript
-// В DocumentViewerHost/detectFileType()
-- PDF: mimeType === 'application/pdf' || extension === 'pdf'
-- Image: mimeType.startsWith('image/') || extensions: png, jpg, jpeg, webp, svg, tiff, gif
-- Excel: mimeType.includes('excel') || extensions: xls, xlsx, xlsm
-- Word: mimeType.includes('word') || extensions: doc, docx
-- DWG: extensions: dwg, dxf
-- CSV: extension === 'csv' || mimeType === 'text/csv'
-```
+Компоненты для просмотра файлов различных форматов в документе.
 
 ## Поддерживаемые форматы
 
-### 1. PDF Viewer (`PDFViewer.tsx`)
+| Формат | Компонент | Статус | Возможности |
+|--------|-----------|--------|-------------|
+| **PDF** | `PDFViewer` | ✅ Полный | Рендеринг страниц, зум, навигация |
+| **Изображения** | `ImageViewer` | ✅ Полный | PNG, JPG, JPEG, WebP, SVG, TIFF |
+| **Excel** | `ExcelViewer` | ✅ Полный | XLS, XLSX, multiple sheets |
+| **Word** | `WordViewer` | ✅ Полный | DOC, DOCX (через mammoth.js) |
+| **DWG/DXF** | `DWGViewer` | ✅ Fallback | Ссылки на Autodesk Viewer |
+| **CSV** | `CSVViewer` | ✅ Полный | Парсинг и отображение таблиц |
 
-**Библиотека:** `pdfjs-dist`
+## Архитектура
 
-**Функциональность:**
-- Просмотр страниц с навигацией (prev/next)
-- Масштабирование (0.5x - 3.0x)
-- Отображение текущего номера страницы и общего количества
-- Адаптивный рендеринг на canvas
-- Загрузка с индикатором прогресса
-- Обработка ошибок с возможностью скачивания
-
-**Интеграция:**
-```typescript
-import { PDFViewer } from '@/components/viewers';
-
-<PDFViewer file={file} />
 ```
-
-### 2. Image Viewer (`ImageViewer.tsx`)
-
-**Библиотека:** Native (HTML5 img + CSS transform)
-
-**Функциональность:**
-- Просмотр изображений всех поддерживаемых форматов
-- Масштабирование (0.25x - 4.0x)
-- Поворот на ±90°
-- Сброс view (zoom/rotation)
-- Drag-to-pan (заготовка)
-- Адаптивное отображение (contain)
-
-**Интеграция:**
-```typescript
-import { ImageViewer } from '@/components/viewers';
-
-<ImageViewer file={file} />
+viewers/
+├── ViewerContainer.tsx      # Главный роутер (определяет тип → рендерит viewer)
+├── DocumentViewerHost.tsx   # Интеграция с workspace (store → viewer)
+├── MockViewerBase.tsx       # Базовый компонент для mock-режима
+├── types.ts                 # Общие типы и утилиты
+├── viewer.module.css        # Стили для всех viewer
+│
+├── PDFViewer.tsx            # PDF viewer (pdfjs-dist)
+├── ImageViewer.tsx          # Image viewer
+├── ExcelViewer.tsx          # Excel viewer (SheetJS/xlsx)
+├── WordViewer.tsx           # Word viewer (mammoth)
+├── DWGViewer.tsx            # DWG fallback viewer
+└── CSVViewer.tsx            # CSV viewer
 ```
-
-### 3. Excel Viewer (`ExcelViewer.tsx`)
-
-**Библиотека:** `xlsx` (SheetJS)
-
-**Функциональность:**
-- Парсинг .xls и .xlsx файлов
-- Отображение multiple sheets с табами
-- Рендеринг таблицы с headers и строками
-- Поддержка пустых ячеек
-- Индикация количества строк в footer
-
-**Интеграция:**
-```typescript
-import { ExcelViewer } from '@/components/viewers';
-
-<ExcelViewer file={file} />
-```
-
-### 4. Word Viewer (`WordViewer.tsx`)
-
-**Библиотека:** `mammoth.js` (для .docx), fallback для .doc
-
-**Функциональность:**
-- Конвертация .docx в HTML через mammoth.js
-- Базовое форматирование (заголовки, параграфы, списки)
-- Fallback страница для .doc и когда mammoth недоступен
-- Кнопки "Скачать" и "Открыть в Google Docs"
-- Честное уведомление о ограничениях
-
-**Fallback Strategy:**
-1. Попытка загрузки через mammoth.js
-2. Если не удалось → показать fallback UI
-3. Предложить скачать файл или открыть в Google Docs/Office Online
-
-**Интеграция:**
-```typescript
-import { WordViewer } from '@/components/viewers';
-
-<WordViewer file={file} />
-```
-
-### 5. DWG Viewer (`DWGViewer.tsx`)
-
-**Библиотека:** Autodesk Viewer (iframe), fallback
-
-**Функциональность:**
-- Интеграция с Autodesk Viewer через iframe (заготовка)
-- Fallback UI с перечнем альтернатив
-- Кнопки: скачать, Autodesk Viewer, Google Viewer
-- Метка "CAD" в toolbar
-
-**Важно:**
-Для полноценного просмотра DWG файлов в production требуется:
-- Autodesk Forge API с авторизацией
-- Либо бэкенд-конвертация в PDF/image
-- Либо интеграция с LibreCAD/QCAD web
-
-**Текущий fallback:**
-```
-┌──────────────────────────────────────┐
-│  Файл CAD-формата                    │
-│                                      │
-│  Для просмотра используйте:          │
-│  • AutoCAD или AutoCAD Web           │
-│  • Autodesk Viewer (онлайн)          │
-│  • LibreCAD (бесплатный)             │
-│  • QCAD                              │
-│  • Браузерный просмотр               │
-│                                      │
-│  [Скачать файл] [Autodesk Viewer]    │
-└──────────────────────────────────────┘
-```
-
-### 6. CSV Viewer (`CSVViewer.tsx`)
-
-**Функциональность:**
-- Уведомление о необходимости внешнего приложения
-- Кнопка скачивания
 
 ## Использование
 
-### В EditorArea
+### Базовое (через DocumentViewerHost)
 
 ```typescript
 import DocumentViewerHost from '@/components/viewers/DocumentViewerHost';
 
-export default function EditorArea() {
-  const { activeTab, openTabs } = useWorkspaceStore();
-  
-  if (!activeTab) {
-    return <EmptyState />;
-  }
-
+// В компоненте страницы:
+export function ProjectsPage() {
   return (
-    <div className="flex-1 overflow-hidden">
-      <DocumentViewerHost />
+    <div className="workspace">
+      <ExplorerSidebar />
+      <DocumentViewerHost />  {/* Автоматически определяет и показывает файл */}
+      <RemarksSidebar />
     </div>
   );
 }
 ```
 
-### Передача файла в Tab
+### Продвинутое (через ViewerContainer)
 
 ```typescript
-// При создании вкладки
-addTab({
-  id: `doc-${Date.now()}`,
-  type: 'document',
-  title: file.name,
-  file: file, // File объект для viewer
-});
+import { ViewerContainer } from '@/components/viewers/ViewerContainer';
+
+// С реальным файлом:
+<ViewerContainer file={fileObject} />
+
+// С URL:
+<ViewerContainer 
+  fileUrl="https://example.com/doc.pdf" 
+  fileName="document.pdf"
+  mock={false}
+/>
+
+// В mock-режиме (демо):
+<ViewerContainer 
+  fileName="КМ1-А01.pdf" 
+  mock={true}
+/>
 ```
 
-## Состояния Viewer
+### Прямое использование viewer
 
-### Empty State
-- Нет выбранного документа
-- Иконка + подсказка "Выберите документ из Explorer"
+```typescript
+import { PDFViewer } from '@/components/viewers/PDFViewer';
 
-### Loading State
-- Индикатор загрузки (spinner)
-- Текст "Загрузка..."
+<PDFViewer 
+  fileUrl={url} 
+  fileName="document.pdf" 
+  mock={false} 
+/>
+```
 
-### Error State
-- Сообщение об ошибке
-- Кнопка "Скачать файл"
+## Mock-режим
 
-### Unsupported Format
-- Иконка файла
-- Сообщение "Формат не поддерживается"
-- Кнопка "Скачать файл"
+Когда `mock={true}` или `fileUrl` не указан, viewer показывает format-specific mock контент:
 
-## Расширяемость
+- **PDF**: Макет страницы с текстовыми блоками
+- **Image**: Placeholder с иконкой
+- **Excel**: Таблица с демо-данными
+- **Word**: Документ с заголовками и списками
+- **DWG**: Placeholder с кнопкой Autodesk Viewer
+- **CSV**: Таблица с демо-данными
 
-### Добавление нового формата
+## API
+
+### ViewerContainer
+
+```typescript
+interface Props {
+  // Legacy mode
+  file?: File;
+  
+  // New mode
+  fileName?: string;
+  fileUrl?: string;
+  mock?: boolean;
+}
+```
+
+### Viewer Props (для всех viewer)
+
+```typescript
+interface ViewerProps {
+  fileUrl?: string;   // URL файла
+  fileName: string;   // Название файла (для заголовка)
+  mock?: boolean;     // Режим mock (демо без реального файла)
+}
+```
+
+### Утилиты
+
+```typescript
+import { detectType, VIEWER_CONFIGS, type ViewerType } from '@/components/viewers/types';
+
+// Определить тип файла по названию:
+const type: ViewerType = detectType("document.pdf");  // 'pdf'
+
+// Конфигурация viewer:
+const config = VIEWER_CONFIGS.pdf;
+// { type: 'pdf', label: 'PDF', bgColor: '#fdf0d5', accentColor: '#dc2626' }
+```
+
+## Добавление нового формата
 
 1. Создайте компонент `NewFormatViewer.tsx`:
-```typescript
-interface NewFormatViewerProps {
-  file: File;
-}
 
-export function NewFormatViewer({ file }: NewFormatViewerProps) {
-  // Реализация viewer
-}
+```typescript
+import type { ViewerProps } from './types';
+import { VIEWER_CONFIGS } from './types';
+import { MockViewerBase } from './MockViewerBase';
+
+export const NewFormatViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock }) => {
+  const config = VIEWER_CONFIGS.newformat;
+  
+  if (mock || !fileUrl) {
+    return (
+      <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor}>
+        {/* Mock content */}
+      </MockViewerBase>
+    );
+  }
+  
+  // Real rendering
+  return (
+    <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor}>
+      {/* Real content */}
+    </MockViewerBase>
+  );
+};
 ```
 
-2. Добавьте определение типа в `DocumentViewerHost`:
+2. Добавьте тип в `types.ts`:
+
 ```typescript
-function detectFileType(file: File): FileType {
-  if (extension === 'newext') return 'newformat';
+export type ViewerType = 'pdf' | 'image' | 'excel' | 'word' | 'dwg' | 'csv' | 'newformat';
+
+export const VIEWER_CONFIGS: Record<ViewerType, ViewerConfig> = {
   // ...
-}
+  newformat: {
+    type: 'newformat',
+    label: 'New Format',
+    bgColor: '#f0f0f0',
+    accentColor: '#666666',
+  },
+};
 ```
 
-3. Добавьте case в switch:
+3. Добавьте в `detectType`:
+
 ```typescript
-switch (fileType) {
-  case 'newformat':
-    return <NewFormatViewer file={file} />;
+export const detectType = (fileName: string): ViewerType => {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  
+  if (ext === 'newext') return 'newformat';
   // ...
-}
+};
+```
+
+4. Добавьте в `ViewerContainer`:
+
+```typescript
+const NewFormatViewer = lazy(() => import('./NewFormatViewer'));
+
+// В component:
+{type === 'newformat' && <NewFormatViewer fileUrl={fileUrl} fileName={fileName} mock={mock} />}
 ```
 
 ## Зависимости
@@ -233,24 +204,25 @@ switch (fileType) {
 ```json
 {
   "pdfjs-dist": "^4.x",
-  "@react-pdf/renderer": "^4.x",
   "xlsx": "^0.18.x",
   "mammoth": "^1.6.x"
 }
 ```
 
-## Известные ограничения
+## Интеграция с workspace
 
-1. **DWG**: Полноценный просмотр требует Autodesk Forge API
-2. **Word (.doc)**: Требует конвертации на бэкенде
-3. **CSV**: Только базовый placeholder
-4. **TIFF**: Может требовать дополнительной библиотеки для рендеринга
+`DocumentViewerHost` автоматически:
+1. Получает активную вкладку из `useWorkspaceStore()`
+2. Проверяет наличие `file` в tab
+3. Если файл есть → рендерит viewer с реальным файлом
+4. Если файла нет → рендерит mock viewer по названию
 
-## Будущие улучшения
+## Стили
 
-- [ ] Поддержка аннотаций и комментариев в PDF
-- [ ] Поиск по тексту PDF
-- [ ] Экспорт в другие форматы
-- [ ] Интеграция с Autodesk Forge API
-- [ ] Поддержка больше CAD-форматов (DWF, DXF)
-- [ ] Онлайн-редактирование Word/Excel
+Все viewer используют CSS-модули (`viewer.module.css`) с CSS-переменными темы:
+
+- `var(--bg-app)` - фон приложения
+- `var(--bg-surface)` - фон поверхности
+- `var(--border-default)` - границы
+- `var(--text-primary)` - основной текст
+- `var(--accent-engineering)` - акцентный цвет

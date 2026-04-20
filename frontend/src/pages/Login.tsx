@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+
 import { FileText } from 'lucide-react';
 
 export default function Login() {
@@ -18,8 +19,9 @@ export default function Login() {
     try {
       await login(username, password);
       navigate('/dashboard');
-    } catch (err: any) {
-      if (err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error')) {
+    } catch (err) {
+      const error = err as { code?: string; message?: string };
+      if (error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error')) {
         setError('Сервер недоступен. Используйте демо-режим или запустите бэкенд.');
       } else {
         setError('Неверный логин или пароль');

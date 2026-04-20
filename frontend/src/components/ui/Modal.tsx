@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -20,9 +20,18 @@ export default function Modal({
   showCloseButton = true,
   footer,
 }: ModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      // Focus first focusable element
+      setTimeout(() => {
+        const firstFocusable = modalRef.current?.querySelector(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        ) as HTMLElement;
+        firstFocusable?.focus();
+      }, 100);
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -59,6 +68,7 @@ export default function Modal({
       aria-modal="true"
       aria-labelledby="modal-title"
       data-testid="modal"
+      ref={modalRef}
     >
       {/* Backdrop */}
       <div

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+
 import { getMyGamification, getBadges } from '../api/gamification';
 import type { GamificationProfile, Badge } from '../types';
 import { Star, Award, Target } from 'lucide-react';

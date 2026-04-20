@@ -1,10 +1,11 @@
 import { WorkspaceLayout, ExplorerSidebar, InspectorPanel, BottomPanel, EditorArea, useWorkspaceStore } from '../components/workspace';
 import { FileText } from 'lucide-react';
 import { useState } from 'react';
+import type { Remark } from '../components/RemarksPanel';
 
 export default function ProjectsPage() {
   const { addTab } = useWorkspaceStore();
-  const [selectedRemark, setSelectedRemark] = useState<any>(null);
+  const [selectedRemark, setSelectedRemark] = useState<Remark | null>(null);
 
   const handleNewTab = () => {
     addTab({
@@ -15,6 +16,21 @@ export default function ProjectsPage() {
       icon: <FileText size={14} />,
       isDirty: true,
     });
+  };
+
+  const handleNewRevision = () => {
+    // Обработчик создания новой ревизии
+    console.log('Создать новую ревизию');
+  };
+
+  const handleApprove = () => {
+    // Обработчик направления на согласование
+    console.log('Направить на согласование');
+  };
+
+  const handleVerify = () => {
+    // Обработчик направления на проверку
+    console.log('Направить на проверку');
   };
 
   const documentData = {
@@ -38,6 +54,9 @@ export default function ProjectsPage() {
       bottomPanel={<BottomPanel />}
       documentData={documentData}
       onNewTab={handleNewTab}
+      onNewRevision={handleNewRevision}
+      onApprove={handleApprove}
+      onVerify={handleVerify}
     >
       <EditorArea />
     </WorkspaceLayout>

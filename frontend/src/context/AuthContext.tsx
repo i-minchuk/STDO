@@ -1,5 +1,7 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useState } from 'react';
+
 import type { ReactNode } from 'react';
+
 
 interface User {
   id: number;
@@ -18,25 +20,26 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
+  const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('stdo-user');
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved) as User);
-      } catch {
-        localStorage.removeItem('stdo-user');
-      }
-    }
-    setLoading(false);
-  }, []);
+    if (!saved) return null;
 
-  const login = async (email: string, _password: string) => {
+    try {
+      return JSON.parse(saved) as User;
+    } catch {
+      localStorage.removeItem('stdo-user');
+      return null;
+    }
+  });
+  const [loading] = useState(false);
+
+  const login = async (email: string, password: string) => {
+    void password;
+
     const mockUser: User = {
       id: 1,
       email,
@@ -81,10 +84,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used inside AuthProvider');
-  }
-  return ctx;
-}

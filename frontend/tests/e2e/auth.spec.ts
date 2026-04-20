@@ -2,14 +2,13 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Authentication E2E Tests', () => {
   const baseUrl = 'http://localhost:5173';
-  const apiUrl = 'http://localhost:8000';
 
   test.beforeEach(async ({ page }) => {
-    await page.goto(baseUrl);
+    await page.goto(`${baseUrl}/login`);
   });
 
   test('should display login form', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText(/login|войти/i);
+    await expect(page.locator('h1')).toContainText(/докпоток iris/i);
     await expect(page.locator('input[type="text"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
@@ -21,7 +20,7 @@ test.describe('Authentication E2E Tests', () => {
     await page.click('button[type="submit"]');
     
     // Wait for error message
-    await expect(page.locator('text=Invalid credentials')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/неверный логин или пароль|сервер недоступен/i)).toBeVisible({ timeout: 5000 });
   });
 
   test('should redirect to dashboard on successful login', async ({ page }) => {
@@ -32,7 +31,7 @@ test.describe('Authentication E2E Tests', () => {
     
     // Wait for navigation
     await page.waitForURL(/dashboard|projects/i, { timeout: 10000 });
-    await expect(page.locator('h1, h2')).toContainText(/dashboard|projects/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/портфолио проектов/i);
   });
 
   test('should logout successfully', async ({ page }) => {
@@ -47,7 +46,7 @@ test.describe('Authentication E2E Tests', () => {
     if (await logoutButton.count() > 0) {
       await logoutButton.click();
       await page.waitForURL(/login/i, { timeout: 5000 });
-      await expect(page.locator('h1')).toContainText(/login|войти/i);
+      await expect(page.locator('h1')).toContainText(/докпоток iris/i);
     }
   });
 });

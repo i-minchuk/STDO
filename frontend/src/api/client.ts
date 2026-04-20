@@ -1,9 +1,12 @@
 import axios from 'axios';
+import * as Sentry from '@sentry/react';
+
 
 // Use relative paths for API requests - Vite proxy handles routing to backend
 const client = axios.create({
   baseURL: '',
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30000, // 30 секунд timeout
 });
 
 client.interceptors.request.use((config) => {
@@ -17,7 +20,32 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
+    const originalRequest = error.config;
+
+    // Retry для сетевых ошибок (до 3 раз с экспоненциальной задержкой)
+    if (
+      (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') &&
+      !originalRequest._retryCount
+    ) {
+      originalRequest._retryCount = 0;
+    }
+
+    if (originalRequest._retryCount < 3) {
+      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+      const delay = Math.min(1000 * Math.pow(2, originalRequest._retryCount), 10000);
+
+      console.warn(`API retry attempt ${originalRequest._retryCount} in ${delay}ms`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return client(originalRequest);
+    }
+
+    if (error.response?.status >= 500 || !error.response) {
+      Sentry.captureException(error);
+    }
+
+    // 401 auth handling
     if (error.response?.status === 401) {
+
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken && !error.config._retry) {
         error.config._retry = true;

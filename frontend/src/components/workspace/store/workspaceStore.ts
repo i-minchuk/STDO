@@ -9,10 +9,26 @@ const DEFAULT_CONTENT_SCALE = 100;
 
 export type ContentScale = 90 | 100 | 110 | 120;
 
+// Новая типизация для документа
+export interface SelectedDocument {
+  id: number;
+  code: string;
+  title: string;
+  fileUrl?: string;
+  fileName: string;
+  project_id: number;
+  status?: string;
+  doc_type?: string;
+  discipline?: string;
+}
+
 interface WorkspaceStore {
   // Вкладки
   openTabs: Tab[];
   activeTabId: string | null;
+
+  // Активный документ (single source of truth)
+  selectedDocument: SelectedDocument | null;
 
   // Панели - размеры
   explorerWidth: number;
@@ -41,6 +57,9 @@ interface WorkspaceStore {
   removeTab: (tabId: string) => void;
   updateTab: (tabId: string, updates: Partial<Tab>) => void;
   setActiveTab: (tabId: string) => void;
+
+  // Actions для документа
+  setSelectedDocument: (doc: SelectedDocument | null) => void;
 
   // Actions для панелей
   toggleExplorer: () => void;
@@ -71,6 +90,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       // Вкладки
       openTabs: [],
       activeTabId: null,
+
+      // Активный документ
+      selectedDocument: null,
 
       // Панели - размеры
       explorerWidth: DEFAULT_EXPLORER_WIDTH,
@@ -143,6 +165,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         })),
 
       setActiveTab: (tabId) => set({ activeTabId: tabId }),
+
+      // Actions для документа
+      setSelectedDocument: (doc) => set({ selectedDocument: doc }),
 
       // Actions для панелей
       toggleExplorer: () =>
